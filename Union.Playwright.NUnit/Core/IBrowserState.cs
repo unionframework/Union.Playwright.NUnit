@@ -9,8 +9,24 @@ namespace Union.Playwright.NUnit.Core
     {
         IModalWindow? ModalWindow { get; }
         IUnionPage? Page { get; }
+
+        /// <summary>
+        /// Gets the URL from the last actualization attempt.
+        /// Implementations should set this in Actualize/ActualizeAsync.
+        /// Default returns null for backward compatibility.
+        /// </summary>
         string? LastActualizedUrl => null;
-        string? LastDiagnosticMessage => null;
+
+        /// <summary>
+        /// Gets diagnostic information from the last actualization attempt.
+        /// </summary>
+        string? LastDiagnosticMessage { get; }
+
+        /// <summary>
+        /// Appends additional diagnostic information to the current message.
+        /// Used by navigation components to add timeout/resolution context.
+        /// </summary>
+        void AppendDiagnosticMessage(string additionalInfo) { }
 
         /// <summary>
         /// Async actualization supporting MatchablePage with DOM checks.

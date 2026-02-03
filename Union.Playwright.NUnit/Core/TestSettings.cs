@@ -16,5 +16,11 @@ namespace Union.Playwright.NUnit.Core
         /// Default: 250ms.
         /// </summary>
         public int NavigationPollIntervalMs { get; set; } = 250;
+
+        /// <summary>
+        /// Timeout in milliseconds for WaitLoadedAsync after navigation.
+        /// Default: 30000 (30 seconds). Set to 0 to disable timeout.
+        /// </summary>
+        public int WaitLoadedTimeoutMs { get; set; } = 30000;
     }
 }

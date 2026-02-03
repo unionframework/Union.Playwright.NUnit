@@ -20,6 +20,11 @@ namespace Union.Playwright.NUnit.Routing
         /// </summary>
         public string? LastMatchReason { get; private set; }
 
+        /// <summary>
+        /// Contains warning message from last registration operation, if any.
+        /// </summary>
+        public string? LastRegistrationWarning { get; private set; }
+
         public MatchUrlRouter()
         {
             _matchablePages = new List<IMatchablePage>();
@@ -50,7 +55,7 @@ namespace Union.Playwright.NUnit.Routing
 
                 if (match.Success)
                 {
-                    var instance = (IMatchablePage)Activator.CreateInstance(dummyPage.GetType())!;
+                    var instance = CreatePageInstance<IMatchablePage>(dummyPage.GetType());
                     instance.BaseUrlInfo = baseUrlInfo;
                     instance.Data = match.Data;
                     instance.Params = match.Params;
@@ -72,7 +77,7 @@ namespace Union.Playwright.NUnit.Routing
                 var match = matcher.Match(requestData.Url, baseUrlInfo.AbsolutePath);
                 if (match.Success)
                 {
-                    var instance = (IUnionPage)Activator.CreateInstance(dummyPage.GetType())!;
+                    var instance = CreatePageInstance<IUnionPage>(dummyPage.GetType());
                     instance.BaseUrlInfo = baseUrlInfo;
                     instance.Data = match.Data;
                     instance.Params = match.Params;
@@ -100,7 +105,7 @@ namespace Union.Playwright.NUnit.Routing
                 var match = matcher.Match(requestData.Url, baseUrlInfo.AbsolutePath);
                 if (match.Success)
                 {
-                    var instance = (IUnionPage)Activator.CreateInstance(dummyPage.GetType())!;
+                    var instance = CreatePageInstance<IUnionPage>(dummyPage.GetType());
                     instance.BaseUrlInfo = baseUrlInfo;
                     instance.Data = match.Data;
                     instance.Params = match.Params;
@@ -111,16 +116,19 @@ namespace Union.Playwright.NUnit.Routing
             return null;
         }
 
-        public List<Type> GetPageTypes()
+        public IReadOnlyList<Type> GetPageTypes()
         {
             var types = new List<Type>();
             types.AddRange(_matchablePages.Select(p => p.GetType()));
             types.AddRange(_regularPages.Keys);
-            return types;
+            return types.AsReadOnly();
         }
 
         public bool HasPage(IUnionPage page)
         {
+            if (page == null)
+                throw new ArgumentNullException(nameof(page));
+
             var pageType = page.GetType();
             if (page is IMatchablePage)
             {
@@ -148,7 +156,8 @@ namespace Union.Playwright.NUnit.Routing
 
         private void RegisterMatchablePage(Type pageType)
         {
-            var pageInstance = (IMatchablePage)Activator.CreateInstance(pageType)!;
+            this.LastRegistrationWarning = null;
+            var pageInstance = CreatePageInstance<IMatchablePage>(pageType);
 
             // Check for duplicate among matchable pages (warning, not error - first match wins)
             var existingDuplicate = _matchablePages.FirstOrDefault(p =>
@@ -157,6 +166,12 @@ namespace Union.Playwright.NUnit.Routing
             {
                 // Allow duplicate paths for MatchablePage - first match wins based on registration order
                 // This is intentional for scenarios like LoginPage and CompanySelectionPage sharing /login
+                var warningMessage =
+                    $"[Warning] MatchablePage '{pageType.Name}' has same path '{pageInstance.AbsolutePath}' " +
+                    $"as existing MatchablePage '{existingDuplicate.GetType().Name}'. " +
+                    $"First registered page will be checked first during matching.";
+                this.LastRegistrationWarning = warningMessage;
+                System.Diagnostics.Debug.WriteLine(warningMessage);
             }
 
             if (!_matchablePages.Any(p => p.GetType() == pageType))
@@ -167,7 +182,7 @@ namespace Union.Playwright.NUnit.Routing
 
         private void RegisterRegularPage(Type pageType)
         {
-            var pageInstance = (IUnionPage)Activator.CreateInstance(pageType)!;
+            var pageInstance = CreatePageInstance<IUnionPage>(pageType);
 
             // Check for duplicate path among regular pages (error)
             var duplicate = _regularPages.FirstOrDefault(p =>
@@ -198,6 +213,47 @@ namespace Union.Playwright.NUnit.Routing
             foreach (var derivedPageType in derivedPageTypes)
             {
                 RegisterPage(derivedPageType);
+            }
+        }
+
+        /// <summary>
+        /// Creates an instance of a page type with meaningful error messages for common failures.
+        /// </summary>
+        /// <typeparam name="T">The expected base type of the page instance.</typeparam>
+        /// <param name="pageType">The concrete page type to instantiate.</param>
+        /// <returns>A new instance of the page type.</returns>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when instantiation fails due to missing constructor, constructor exception, or type loading issues.
+        /// </exception>
+        private static T CreatePageInstance<T>(Type pageType) where T : class, IUnionPage
+        {
+            try
+            {
+                var instance = Activator.CreateInstance(pageType);
+                if (instance == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Activator.CreateInstance returned null for type '{pageType.FullName}'.");
+                }
+                return (T)instance;
+            }
+            catch (MissingMethodException ex)
+            {
+                throw new InvalidOperationException(
+                    $"Page type '{pageType.Name}' must have a public parameterless constructor. " +
+                    $"Add a public constructor with no parameters to this class.", ex);
+            }
+            catch (TargetInvocationException ex)
+            {
+                throw new InvalidOperationException(
+                    $"Constructor of page type '{pageType.Name}' threw an exception. " +
+                    $"Page constructors should not throw exceptions.", ex.InnerException ?? ex);
+            }
+            catch (TypeLoadException ex)
+            {
+                throw new InvalidOperationException(
+                    $"Failed to load page type '{pageType.Name}'. " +
+                    $"Ensure all dependencies are available.", ex);
             }
         }
     }

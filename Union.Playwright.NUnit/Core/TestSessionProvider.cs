@@ -6,52 +6,86 @@ using Microsoft.Playwright;
 using Union.Playwright.NUnit.Services;
 using Union.Playwright.NUnit.TestSession;
 
-namespace Union.Playwright.NUnit.Core
+namespace Union.Playwright.NUnit.Core;
+
+/// <summary>
+/// Base class for configuring test session dependencies.
+/// Creates a DI container and provides factory method for test sessions.
+/// </summary>
+/// <typeparam name="T">The concrete test session type.</typeparam>
+public abstract class TestSessionProvider<T> where T : class, ITestSession
 {
-    public abstract class TestSessionProvider<T> where T : class, ITestSession
+    private readonly IHost _testApp;
+
+    /// <summary>
+    /// Initializes the DI container with default and custom services.
+    /// </summary>
+    protected TestSessionProvider()
     {
-        private readonly IHost _testApp;
+        var builder = Host.CreateDefaultBuilder();
 
-        protected TestSessionProvider()
+        builder.ConfigureServices((context, services) =>
         {
-            var builder = Host.CreateDefaultBuilder();
-            builder.ConfigureServices((context, services) =>
-            {
-                services.AddScoped<IWeb, Web>();
-                services.AddScoped<ITestSession, T>();
-                services.AddScoped<IServiceContextsPool, TestAwareServiceContextsPool>();
-                var settings = context.Configuration.GetSection("TestSettings").Get<TestSettings>();
-                if(settings != null)
-                {
-                    services.AddSingleton(settings);
-                }
-                ConfigureServices(services);
-            });
-            _testApp = builder.Build();
-        }
+            // Register framework services
+            services.AddScoped<IWeb, Web>();
+            services.AddScoped<ITestSession, T>();
 
-        public ScopedTestSession CreateTestSession(Func<IPage> pageFactory)
-        {
-            var scope = _testApp.Services.CreateAsyncScope();
-            var provider = scope.ServiceProvider;
+            // Register optional settings from configuration
+            var settings = context.Configuration
+                .GetSection("TestSettings")
+                .Get<TestSettings>();
 
-            var pool = provider.GetRequiredService<IServiceContextsPool>();
-            if (pool is TestAwareServiceContextsPool testPool)
+            if (settings != null)
             {
-                testPool.SetPageFactory(pageFactory);
+                services.AddSingleton(settings);
+            }
+            else
+            {
+                services.AddSingleton(TestSettings.Default);
             }
 
-            var session = provider.GetRequiredService<ITestSession>();
-            var web = provider.GetRequiredService<IWeb>();
-            session.GetServices().ForEach(s => web.RegisterService(s));
+            // Allow derived class to register custom services
+            ConfigureServices(services);
+        });
 
-            return new ScopedTestSession(session, scope);
+        _testApp = builder.Build();
+    }
+
+    /// <summary>
+    /// Gets the DI host for advanced scenarios.
+    /// </summary>
+    protected IHost TestHost => _testApp;
+
+    /// <summary>
+    /// Creates a new test session with an isolated browser context.
+    /// </summary>
+    /// <param name="context">The browser context for this test.</param>
+    /// <returns>A scoped test session that should be disposed after the test.</returns>
+    public ScopedTestSession CreateTestSession(IBrowserContext context)
+    {
+        if (context == null)
+            throw new ArgumentNullException(nameof(context));
+
+        // Create new DI scope for this test
+        var scope = _testApp.Services.CreateAsyncScope();
+        var provider = scope.ServiceProvider;
+
+        // Resolve the test session (and all its dependencies)
+        var session = provider.GetRequiredService<ITestSession>();
+
+        // Register services with the Web routing system
+        var web = provider.GetRequiredService<IWeb>();
+        foreach (var service in session.GetServices())
+        {
+            web.RegisterService(service);
         }
 
-        /// <summary>
-        /// Implement this method to configure dependencies
-        /// </summary>
-        /// <param name="services"></param>
-        public abstract void ConfigureServices(IServiceCollection services);
+        return new ScopedTestSession(session, scope, context);
     }
+
+    /// <summary>
+    /// Override to register custom services for tests.
+    /// </summary>
+    /// <param name="services">The service collection to configure.</param>
+    public abstract void ConfigureServices(IServiceCollection services);
 }

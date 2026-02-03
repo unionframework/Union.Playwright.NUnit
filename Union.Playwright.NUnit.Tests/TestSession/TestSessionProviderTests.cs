@@ -12,24 +12,24 @@ namespace Union.Playwright.NUnit.Tests.TestSession;
 public class TestSessionProviderTests
 {
     private TestableTestSessionProvider _provider = null!;
-    private IPage _fakePage = null!;
+    private IBrowserContext _fakeContext = null!;
 
     [SetUp]
     public void SetUp()
     {
-        var fakeContext = Substitute.For<IBrowserContext>();
-        _fakePage = Substitute.For<IPage>();
-        _fakePage.Context.Returns(fakeContext);
+        _fakeContext = Substitute.For<IBrowserContext>();
+        var fakePage = Substitute.For<IPage>();
+        _fakeContext.NewPageAsync().Returns(Task.FromResult(fakePage));
         _provider = new TestableTestSessionProvider();
     }
 
     #region CreateTestSession Tests
 
     [Test]
-    public void CreateTestSession_ReturnsNonNullScopedSession()
+    public async Task CreateTestSession_ReturnsNonNullScopedSession()
     {
         // Act
-        using var scoped = _provider.CreateTestSession(() => _fakePage);
+        await using var scoped = _provider.CreateTestSession(_fakeContext);
 
         // Assert
         scoped.Should().NotBeNull();
@@ -38,21 +38,25 @@ public class TestSessionProviderTests
     }
 
     [Test]
-    public void CreateTestSession_CalledTwice_ReturnsDifferentSessions()
+    public async Task CreateTestSession_CalledTwice_ReturnsDifferentSessions()
     {
+        // Arrange
+        var context1 = Substitute.For<IBrowserContext>();
+        var context2 = Substitute.For<IBrowserContext>();
+
         // Act
-        using var scoped1 = _provider.CreateTestSession(() => _fakePage);
-        using var scoped2 = _provider.CreateTestSession(() => _fakePage);
+        await using var scoped1 = _provider.CreateTestSession(context1);
+        await using var scoped2 = _provider.CreateTestSession(context2);
 
         // Assert
         scoped1.Session.Should().NotBeSameAs(scoped2.Session);
     }
 
     [Test]
-    public void CreateTestSession_SessionContainsRegisteredServices()
+    public async Task CreateTestSession_SessionContainsRegisteredServices()
     {
         // Act
-        using var scoped = _provider.CreateTestSession(() => _fakePage);
+        await using var scoped = _provider.CreateTestSession(_fakeContext);
         var services = scoped.Session.GetServices();
 
         // Assert
@@ -60,14 +64,24 @@ public class TestSessionProviderTests
     }
 
     [Test]
-    public void CreateTestSession_DisposingScope_DoesNotThrow()
+    public async Task CreateTestSession_DisposingScope_DoesNotThrow()
     {
         // Act
-        var scoped = _provider.CreateTestSession(() => _fakePage);
+        var scoped = _provider.CreateTestSession(_fakeContext);
 
         // Assert
-        var act = () => scoped.Dispose();
-        act.Should().NotThrow();
+        var act = async () => await scoped.DisposeAsync();
+        await act.Should().NotThrowAsync();
+    }
+
+    [Test]
+    public async Task CreateTestSession_StoresContext()
+    {
+        // Act
+        await using var scoped = _provider.CreateTestSession(_fakeContext);
+
+        // Assert
+        scoped.Context.Should().BeSameAs(_fakeContext);
     }
 
     #endregion
@@ -75,11 +89,16 @@ public class TestSessionProviderTests
     #region Session Lifecycle Tests
 
     [Test]
-    public void CreateTestSession_MultipleCalls_EachGetsIsolatedSession()
+    public async Task CreateTestSession_MultipleCalls_EachGetsIsolatedSession()
     {
+        // Arrange
+        var contexts = Enumerable.Range(0, 5)
+            .Select(_ => Substitute.For<IBrowserContext>())
+            .ToList();
+
         // Act
-        var sessions = Enumerable.Range(0, 5)
-            .Select(_ => _provider.CreateTestSession(() => _fakePage))
+        var sessions = contexts
+            .Select(ctx => _provider.CreateTestSession(ctx))
             .ToList();
 
         try
@@ -90,7 +109,10 @@ public class TestSessionProviderTests
         }
         finally
         {
-            sessions.ForEach(s => s.Dispose());
+            foreach (var s in sessions)
+            {
+                await s.DisposeAsync();
+            }
         }
     }
 

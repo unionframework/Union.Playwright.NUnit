@@ -22,7 +22,7 @@ namespace Union.Playwright.NUnit.Routing
         [Obsolete("Use GetPageAsync instead. This method does not support MatchablePage.")]
         IUnionPage? GetPage(RequestData requestData, BaseUrlInfo baseUrlInfo);
 
-        List<Type> GetPageTypes();
+        IReadOnlyList<Type> GetPageTypes();
 
         bool HasPage(IUnionPage page);
     }

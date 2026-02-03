@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Union.Playwright.NUnit.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Remove="Exceptions\**" />
     <EmbeddedResource Remove="Exceptions\**" />
     <None Remove="Exceptions\**" />

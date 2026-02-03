@@ -16,11 +16,11 @@ namespace Union.Playwright.NUnit.Tests.Fakes;
 public class FakeUnionService : IUnionService
 {
     private readonly string _baseUrl;
+    private IPage? _page;
 
     public FakeUnionService(string baseUrl = "https://test.example.com")
     {
         _baseUrl = baseUrl;
-        ServiceContextsPool = Substitute.For<IServiceContextsPool>();
         State = Substitute.For<IBrowserState>();
         Go = Substitute.For<IBrowserGo>();
     }
@@ -29,11 +29,31 @@ public class FakeUnionService : IUnionService
 
     public BaseUrlPattern BaseUrlPattern => new BaseUrlPattern(new BaseUrlRegexBuilder(_baseUrl).Build());
 
-    public IServiceContextsPool ServiceContextsPool { get; }
-
     public IBrowserState State { get; }
 
     public IBrowserGo Go { get; }
+
+    /// <summary>
+    /// Gets or creates a page for this service.
+    /// For tests, returns a mock page or uses the ScopedTestSession if available.
+    /// </summary>
+    public async Task<IPage> GetOrCreatePageAsync()
+    {
+        if (_page == null)
+        {
+            var currentSession = ScopedTestSession.Current;
+            if (currentSession != null)
+            {
+                _page = await currentSession.Context.NewPageAsync();
+            }
+            else
+            {
+                // For unit tests without a real session, return a mock
+                _page = Substitute.For<IPage>();
+            }
+        }
+        return _page;
+    }
 
     public ValueTask<IUnionPage?> GetPageAsync(RequestData requestData, BaseUrlInfo baseUrlInfo, IPage playwrightPage)
     {

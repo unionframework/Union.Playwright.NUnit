@@ -19,12 +19,12 @@ namespace Union.Playwright.NUnit.Tests.TestSession;
 [Category("ThreadSafety")]
 public class ConcurrencyTests
 {
-    private IPage CreateFakePage()
+    private IBrowserContext CreateFakeContext()
     {
         var mockContext = Substitute.For<IBrowserContext>();
         var mockPage = Substitute.For<IPage>();
-        mockPage.Context.Returns(mockContext);
-        return mockPage;
+        mockContext.NewPageAsync().Returns(Task.FromResult(mockPage));
+        return mockContext;
     }
 
     #region TestSessionProvider Concurrency Tests
@@ -44,7 +44,8 @@ public class ConcurrencyTests
         {
             try
             {
-                var scoped = provider.CreateTestSession(() => CreateFakePage());
+                var context = CreateFakeContext();
+                var scoped = provider.CreateTestSession(context);
                 scopedSessions.Add(scoped);
                 return scoped;
             }
@@ -62,7 +63,10 @@ public class ConcurrencyTests
         results.Should().AllSatisfy(r => r.Should().NotBeNull());
 
         // Cleanup
-        foreach (var s in scopedSessions) s?.Dispose();
+        foreach (var s in scopedSessions)
+        {
+            if (s != null) await s.DisposeAsync();
+        }
     }
 
     [Test]
@@ -77,7 +81,8 @@ public class ConcurrencyTests
         // Act
         var tasks = Enumerable.Range(0, 20).Select(_ => Task.Run(() =>
         {
-            var scoped = provider.CreateTestSession(() => CreateFakePage());
+            var context = CreateFakeContext();
+            var scoped = provider.CreateTestSession(context);
             scopedSessions.Add(scoped);
             return scoped;
         }));
@@ -89,84 +94,56 @@ public class ConcurrencyTests
         sessions.Should().OnlyHaveUniqueItems("each call should create a distinct session");
 
         // Cleanup
-        foreach (var s in scopedSessions) s?.Dispose();
+        foreach (var s in scopedSessions)
+        {
+            if (s != null) await s.DisposeAsync();
+        }
     }
 
     #endregion
 
-    #region TestAwareServiceContextsPool Concurrency Tests
+    #region AsyncLocal Isolation Tests
 
     [Test]
-    [Repeat(10)]
-    [Description("Verifies GetContext with page factory doesn't throw when called from multiple threads")]
-    public async Task GetContext_WithPageFactory_WhenCalledConcurrently_DoesNotThrow()
+    [Description("Verifies AsyncLocal properly isolates sessions between async flows")]
+    public async Task AsyncLocal_IsolatesBetweenAsyncFlows()
     {
         // Arrange
-        var pool = new TestAwareServiceContextsPool();
-        var mockContext = Substitute.For<IBrowserContext>();
-        var mockPage = Substitute.For<IPage>();
-        mockPage.Context.Returns(mockContext);
-        pool.SetPageFactory(() => mockPage);
+        ScopedTestSession? session1Observed = null;
+        ScopedTestSession? session2Observed = null;
 
-        var services = Enumerable.Range(0, 50)
-            .Select(_ => Substitute.For<IUnionService>())
-            .ToList();
-        var exceptions = new ConcurrentBag<Exception>();
+        var provider = new TestableTestSessionProvider();
+        var context1 = CreateFakeContext();
+        var context2 = CreateFakeContext();
 
-        // Act
-        var tasks = services.Select(async service =>
+        var session1 = provider.CreateTestSession(context1);
+        var session2 = provider.CreateTestSession(context2);
+
+        // Act - Set different sessions in different async flows
+        var task1 = Task.Run(async () =>
         {
-            try
-            {
-                return await pool.GetContext(service);
-            }
-            catch (Exception ex)
-            {
-                exceptions.Add(ex);
-                return null;
-            }
+            ScopedTestSession.SetCurrent(session1);
+            await Task.Delay(50);
+            session1Observed = ScopedTestSession.Current;
         });
 
-        var results = await Task.WhenAll(tasks);
-
-        // Assert
-        exceptions.Should().BeEmpty("concurrent context access should not throw");
-
-        // Cleanup
-        pool.Dispose();
-    }
-
-    [Test]
-    [Repeat(10)]
-    [Description("Same service requested concurrently should return same context")]
-    public async Task GetContext_WithPageFactory_SameServiceConcurrently_ReturnsSameContext()
-    {
-        // Arrange
-        var pool = new TestAwareServiceContextsPool();
-        var mockContext = Substitute.For<IBrowserContext>();
-        var mockPage = Substitute.For<IPage>();
-        mockPage.Context.Returns(mockContext);
-        pool.SetPageFactory(() => mockPage);
-
-        var sharedService = Substitute.For<IUnionService>();
-        var threadCount = 20;
-        var barrier = new Barrier(threadCount);
-
-        // Act
-        var tasks = Enumerable.Range(0, threadCount).Select(_ => Task.Run(async () =>
+        var task2 = Task.Run(async () =>
         {
-            barrier.SignalAndWait();
-            return await pool.GetContext(sharedService);
-        }));
+            ScopedTestSession.SetCurrent(session2);
+            await Task.Delay(50);
+            session2Observed = ScopedTestSession.Current;
+        });
 
-        var results = await Task.WhenAll(tasks);
+        await Task.WhenAll(task1, task2);
 
         // Assert
-        results.Distinct().Should().HaveCount(1,
-            "all concurrent calls should return the same context for the same service");
+        session1Observed.Should().BeSameAs(session1, "task1 should see session1");
+        session2Observed.Should().BeSameAs(session2, "task2 should see session2");
 
         // Cleanup
-        pool.Dispose();
+        ScopedTestSession.SetCurrent(null);
+        await session1.DisposeAsync();
+        await session2.DisposeAsync();
     }
 
     #endregion

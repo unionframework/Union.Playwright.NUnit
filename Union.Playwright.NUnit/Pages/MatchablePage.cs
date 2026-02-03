@@ -1,5 +1,6 @@
-using Microsoft.Playwright;
+using System;
 using System.Threading.Tasks;
+using Microsoft.Playwright;
 using Union.Playwright.NUnit.Pages.Interfaces;
 using Union.Playwright.NUnit.Routing;
 
@@ -55,12 +56,61 @@ namespace Union.Playwright.NUnit.Pages
             return ValueTask.FromResult(result);
         }
 
+        #region DOM Check Helpers
+
         /// <summary>
-        /// Override to customize request data generation for navigation.
+        /// Checks if an element exists without waiting. Uses immediate timeout.
+        /// Use this for DOM-based page identification in MatchAsync overrides.
         /// </summary>
-        public new virtual RequestData GetRequest(BaseUrlInfo defaultBaseUrlInfo)
+        /// <param name="page">The Playwright page to check.</param>
+        /// <param name="selector">CSS selector for the element.</param>
+        /// <returns>True if at least one element matches the selector.</returns>
+        protected static async ValueTask<bool> ElementExistsAsync(IPage page, string selector)
         {
-            return base.GetRequest(defaultBaseUrlInfo);
+            try
+            {
+                var count = await page.Locator(selector).CountAsync();
+                return count > 0;
+            }
+            catch (TimeoutException)
+            {
+                return false;
+            }
+            catch (PlaywrightException)
+            {
+                // Element not found or page navigated away
+                return false;
+            }
         }
+
+        /// <summary>
+        /// Checks if an element contains specific text without waiting.
+        /// Use this for DOM-based page identification in MatchAsync overrides.
+        /// </summary>
+        /// <param name="page">The Playwright page to check.</param>
+        /// <param name="selector">CSS selector for the element.</param>
+        /// <param name="expectedText">Text that the element should contain.</param>
+        /// <returns>True if element exists and contains the expected text.</returns>
+        protected static async ValueTask<bool> ElementContainsTextAsync(
+            IPage page,
+            string selector,
+            string expectedText)
+        {
+            try
+            {
+                var locator = page.Locator(selector);
+                if (await locator.CountAsync() == 0)
+                    return false;
+
+                var text = await locator.First.TextContentAsync();
+                return text?.Contains(expectedText, StringComparison.OrdinalIgnoreCase) ?? false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        #endregion
     }
 }
