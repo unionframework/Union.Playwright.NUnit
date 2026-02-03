@@ -2,10 +2,10 @@ using Union.Playwright.NUnit.Core;
 using System.Threading.Tasks;
 using Union.Playwright.NUnit.Routing;
 using System;
-using Microsoft.Extensions.Logging;
 using Union.Playwright.NUnit.Services;
 using Microsoft.Playwright;
 using Union.Playwright.NUnit.Pages.Interfaces;
+using System.Diagnostics;
 
 namespace Union.Playwright.NUnit.TestSession
 {
@@ -15,14 +15,15 @@ namespace Union.Playwright.NUnit.TestSession
         private readonly IUnionService _service;
         private readonly INavigationService _navigationService;
         private readonly IBrowserState _state;
-        private ILogger _logger;
+        private readonly TestSettings _settings;
 
-        public BrowserGo(IUnionService service, IBrowserState state, IServiceContextsPool serviceContextsPool)
+        public BrowserGo(IUnionService service, IBrowserState state, IServiceContextsPool serviceContextsPool, TestSettings? settings = null)
         {
             _service = service;
             _navigationService = service;
             _state = state;
             _serviceContextsPool = serviceContextsPool;
+            _settings = settings ?? TestSettings.Default;
         }
 
         private async Task<IPage> GetPageAsync()
@@ -42,7 +43,12 @@ namespace Union.Playwright.NUnit.TestSession
             await this.ToPage(pageInstance);
             return _state.PageAs<T>()
                 ?? throw new InvalidOperationException(
-                    $"Navigation did not resolve to {typeof(T).Name}. Current URL may not match the expected page pattern.");
+                    $"Navigation did not resolve to {typeof(T).Name}.\n" +
+                    $"  Expected path: {pageInstance.AbsolutePath}\n" +
+                    $"  Browser URL:   {_state.LastActualizedUrl}\n" +
+                    $"  Base URL:      {_service.BaseUrl}\n" +
+                    $"  Resolved as:   {(_state.Page != null ? _state.Page.GetType().Name : "(none)")}\n" +
+                    $"  Diagnostics:   {_state.LastDiagnosticMessage}");
         }
 
         public async Task ToPage(IUnionPage page)
@@ -80,6 +86,17 @@ namespace Union.Playwright.NUnit.TestSession
         private async Task AfterNavigateAsync(IPage page)
         {
             _state.Actualize(page);
+
+            if (!_state.PageIs<IUnionPage>() && _settings.NavigationResolveTimeoutMs > 0)
+            {
+                var sw = Stopwatch.StartNew();
+                while (!_state.PageIs<IUnionPage>() && sw.ElapsedMilliseconds < _settings.NavigationResolveTimeoutMs)
+                {
+                    await Task.Delay(_settings.NavigationPollIntervalMs);
+                    _state.Actualize(page);
+                }
+            }
+
             if (_state.PageIs<IUnionPage>())
             {
                 await _state.PageAs<IUnionPage>().WaitLoadedAsync();

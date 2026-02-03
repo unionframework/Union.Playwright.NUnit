@@ -10,17 +10,19 @@ namespace Union.Playwright.NUnit.Services
     {
         private IRouter _router;
         private readonly IServiceContextsPool _serviceContextsPool;
+        private readonly TestSettings _testSettings;
         public IServiceContextsPool ServiceContextsPool => _serviceContextsPool;
 
         private IBrowserState _state;
         public IBrowserState State => _state ??= new BrowserState(this);
 
         private IBrowserGo _go;
-        public IBrowserGo Go => _go ??= new BrowserGo(this, State, _serviceContextsPool);
+        public IBrowserGo Go => _go ??= new BrowserGo(this, State, _serviceContextsPool, _testSettings);
 
-        public UnionService(IServiceContextsPool serviceContextsPool)
+        public UnionService(IServiceContextsPool serviceContextsPool, TestSettings? testSettings = null)
         {
             _serviceContextsPool = serviceContextsPool;
+            _testSettings = testSettings ?? TestSettings.Default;
             var matchUrlRouter = new MatchUrlRouter();
             matchUrlRouter.RegisterDerivedPages<T>();
             _router = matchUrlRouter;

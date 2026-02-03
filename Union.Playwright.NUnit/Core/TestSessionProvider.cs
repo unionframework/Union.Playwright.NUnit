@@ -32,7 +32,7 @@ namespace Union.Playwright.NUnit.Core
 
         public ScopedTestSession CreateTestSession(Func<IPage> pageFactory)
         {
-            var scope = _testApp.Services.CreateScope();
+            var scope = _testApp.Services.CreateAsyncScope();
             var provider = scope.ServiceProvider;
 
             var pool = provider.GetRequiredService<IServiceContextsPool>();

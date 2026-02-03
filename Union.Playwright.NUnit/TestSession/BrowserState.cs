@@ -10,6 +10,8 @@ namespace Union.Playwright.NUnit.TestSession
         private readonly IPageResolver _pageResolver;
         public IModalWindow? ModalWindow {  get; private set; }
         public IUnionPage? Page {  get; private set; }
+        public string? LastActualizedUrl { get; private set; }
+        public string? LastDiagnosticMessage { get; private set; }
 
         public BrowserState(IPageResolver pageResolver)
         {
@@ -19,12 +21,25 @@ namespace Union.Playwright.NUnit.TestSession
         public void Actualize(IPage page)
         {
             this.Page = null;
+            LastActualizedUrl = page.Url;
             var baseUrlPattern = _pageResolver.BaseUrlPattern;
             var result = baseUrlPattern.Match(page.Url);
             if (result.Level == BaseUrlMatchLevel.FullDomain)
             {
                 this.Page = _pageResolver.GetPage(new Routing.RequestData(page.Url), result.GetBaseUrlInfo());
-                this.Page.Activate(page);
+                if (this.Page != null)
+                {
+                    this.Page.Activate(page);
+                    LastDiagnosticMessage = $"Resolved to {this.Page.GetType().Name}";
+                }
+                else
+                {
+                    LastDiagnosticMessage = $"Base URL matched (FullDomain) but no page pattern matched for path in '{page.Url}'";
+                }
+            }
+            else
+            {
+                LastDiagnosticMessage = $"Base URL did not match (level: {result.Level}). URL: '{page.Url}', Pattern: '{baseUrlPattern}'";
             }
         }
 

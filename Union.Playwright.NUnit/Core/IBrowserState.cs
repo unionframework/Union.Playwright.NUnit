@@ -7,6 +7,8 @@ namespace Union.Playwright.NUnit.Core
     {
         public IModalWindow? ModalWindow { get; }
         public IUnionPage? Page { get; }
+        public string? LastActualizedUrl => null;
+        public string? LastDiagnosticMessage => null;
         public void Actualize(IPage page);
         public T? PageAs<T>() where T : class, IUnionPage => Page as T;
         public bool PageIs<T>() where T : IUnionPage;

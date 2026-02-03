@@ -7,24 +7,43 @@ namespace Union.Playwright.NUnit.TestSession
 {
     public abstract class UnionTest<TSession> : PageTest where TSession : class, ITestSession
     {
+        private readonly object _sessionLock = new();
         private ScopedTestSession? _scopedSession;
+        private TSession? _session;
 
-        protected TSession Session { get; private set; } = null!;
+        protected TSession Session
+        {
+            get
+            {
+                if (_session == null)
+                {
+                    EnsureSession();
+                }
+                return _session!;
+            }
+        }
 
         protected abstract TestSessionProvider<TSession> GetSessionProvider();
 
-        [SetUp]
-        public void UnionSetUp()
+        private void EnsureSession()
         {
-            _scopedSession = this.GetSessionProvider().CreateTestSession(() => this.Page);
-            this.Session = (TSession)_scopedSession.Session;
+            lock (_sessionLock)
+            {
+                if (_scopedSession != null) return;
+                _scopedSession = this.GetSessionProvider().CreateTestSession(() => this.Page);
+                _session = (TSession)_scopedSession.Session;
+            }
         }
 
         [TearDown]
-        public void UnionTearDown()
+        public async Task UnionTearDown()
         {
-            _scopedSession?.Dispose();
-            _scopedSession = null;
+            if (_scopedSession != null)
+            {
+                await _scopedSession.DisposeAsync();
+                _scopedSession = null;
+                _session = null;
+            }
         }
 
         protected TService GetService<TService>() where TService : IUnionService

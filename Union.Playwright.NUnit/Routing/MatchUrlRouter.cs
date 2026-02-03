@@ -63,7 +63,15 @@ namespace Union.Playwright.NUnit.Routing
         public void RegisterPage(Type pageType)
         {
             var pageInstance = (IUnionPage)Activator.CreateInstance(pageType);
-            _pages.Add(pageType, pageInstance);
+            var duplicate = _pages.FirstOrDefault(p =>
+                p.Value.AbsolutePath == pageInstance.AbsolutePath && p.Key != pageType);
+            if (duplicate.Key != null)
+            {
+                throw new InvalidOperationException(
+                    $"Duplicate page path '{pageInstance.AbsolutePath}' registered by both " +
+                    $"{duplicate.Key.Name} and {pageType.Name}.");
+            }
+            _pages[pageType] = pageInstance;
         }
 
         public void RegisterDerivedPages<T>()
