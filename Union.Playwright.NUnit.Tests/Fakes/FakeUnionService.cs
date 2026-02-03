@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Microsoft.Playwright;
 using NSubstitute;
 using Union.Playwright.NUnit.Core;
@@ -33,7 +35,13 @@ public class FakeUnionService : IUnionService
 
     public IBrowserGo Go { get; }
 
-    public IUnionPage GetPage(RequestData requestData, BaseUrlInfo baseUrlInfo)
+    public ValueTask<IUnionPage?> GetPageAsync(RequestData requestData, BaseUrlInfo baseUrlInfo, IPage playwrightPage)
+    {
+        return ValueTask.FromResult<IUnionPage?>(Substitute.For<IUnionPage>());
+    }
+
+    [Obsolete("Use GetPageAsync instead")]
+    public IUnionPage? GetPage(RequestData requestData, BaseUrlInfo baseUrlInfo)
     {
         return Substitute.For<IUnionPage>();
     }

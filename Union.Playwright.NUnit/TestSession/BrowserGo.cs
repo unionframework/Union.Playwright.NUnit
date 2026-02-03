@@ -85,7 +85,7 @@ namespace Union.Playwright.NUnit.TestSession
 
         private async Task AfterNavigateAsync(IPage page)
         {
-            _state.Actualize(page);
+            await _state.ActualizeAsync(page);
 
             if (!_state.PageIs<IUnionPage>() && _settings.NavigationResolveTimeoutMs > 0)
             {
@@ -93,13 +93,13 @@ namespace Union.Playwright.NUnit.TestSession
                 while (!_state.PageIs<IUnionPage>() && sw.ElapsedMilliseconds < _settings.NavigationResolveTimeoutMs)
                 {
                     await Task.Delay(_settings.NavigationPollIntervalMs);
-                    _state.Actualize(page);
+                    await _state.ActualizeAsync(page);
                 }
             }
 
             if (_state.PageIs<IUnionPage>())
             {
-                await _state.PageAs<IUnionPage>().WaitLoadedAsync();
+                await _state.PageAs<IUnionPage>()!.WaitLoadedAsync();
             }
         }
     }

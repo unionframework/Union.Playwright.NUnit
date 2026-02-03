@@ -10,6 +10,11 @@ namespace Union.Playwright.NUnit.Routing
         {
         }
 
+        public UriMatchResult(bool success, string? reason)
+            : this(success, new Dictionary<string, string>(), new Dictionary<string, string>(), new List<Cookie>(), reason)
+        {
+        }
+
         public UriMatchResult(bool success, Dictionary<string, string> data)
             : this(success, data, new Dictionary<string, string>())
         {
@@ -25,11 +30,22 @@ namespace Union.Playwright.NUnit.Routing
             Dictionary<string, string> data,
             Dictionary<string, string> _params,
             List<Cookie> cookies)
+            : this(success, data, _params, cookies, null)
+        {
+        }
+
+        public UriMatchResult(
+            bool success,
+            Dictionary<string, string> data,
+            Dictionary<string, string> _params,
+            List<Cookie> cookies,
+            string? reason)
         {
             Success = success;
             Data = data;
             Cookies = cookies;
             Params = _params;
+            Reason = reason;
         }
 
         public bool Success { get; private set; }
@@ -40,16 +56,19 @@ namespace Union.Playwright.NUnit.Routing
 
         public Dictionary<string, string> Params { get; set; }
 
-        public static UriMatchResult Matched()
+        /// <summary>
+        /// Optional diagnostic message explaining why the match succeeded or failed.
+        /// </summary>
+        public string? Reason { get; private set; }
+
+        public static UriMatchResult Matched(string? reason = null)
         {
-            return new UriMatchResult(true);
+            return new UriMatchResult(true, reason);
         }
 
-        public static UriMatchResult Unmatched()
+        public static UriMatchResult Unmatched(string? reason = null)
         {
-            return new UriMatchResult(false);
+            return new UriMatchResult(false, reason);
         }
     }
-
-
 }
