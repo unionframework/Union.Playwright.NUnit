@@ -13,11 +13,12 @@ namespace Union.Playwright.NUnit.Services;
 /// Each service instance has its own page (tab) within the shared browser context.
 /// </summary>
 /// <typeparam name="T">The base page type for this service.</typeparam>
-public abstract class UnionService<T> : IUnionService where T : IUnionPage
+public abstract class UnionService<T> : IUnionService, IBrowserContextAware where T : IUnionPage
 {
     private readonly MatchUrlRouter _router;
     private readonly TestSettings _testSettings;
     private IPage? _page;
+    private IBrowserContext? _browserContext;
 
     private IBrowserState? _state;
     /// <summary>
@@ -78,6 +79,15 @@ public abstract class UnionService<T> : IUnionService where T : IUnionPage
     private BaseUrlInfo DefaultBaseUrlInfo => new BaseUrlInfo(Host, AbsolutePath);
 
     /// <summary>
+    /// Sets the browser context for this service.
+    /// Called by ScopedTestSession.SetContext() during test setup.
+    /// </summary>
+    void IBrowserContextAware.SetBrowserContext(IBrowserContext context)
+    {
+        _browserContext = context;
+    }
+
+    /// <summary>
     /// Gets or creates the page for this service.
     /// Each service has its own tab within the shared browser context.
     /// The page is created lazily on first access.
@@ -90,19 +100,16 @@ public abstract class UnionService<T> : IUnionService where T : IUnionPage
     {
         if (_page == null)
         {
-            var currentSession = ScopedTestSession.Current;
-            if (currentSession == null)
+            if (_browserContext == null)
             {
                 throw new InvalidOperationException(
-                    "Cannot create page: no test session available. " +
+                    "Cannot create page: no browser context available. " +
                     "Ensure this is called within a test method after [SetUp].");
             }
 
             try
             {
-                // Create a new page in the test's browser context
-                // This page is specific to this service instance
-                _page = await currentSession.Context.NewPageAsync();
+                _page = await _browserContext.NewPageAsync();
             }
             catch (Exception ex)
             {
