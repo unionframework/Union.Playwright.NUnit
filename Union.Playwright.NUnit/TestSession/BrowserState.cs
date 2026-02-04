@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
+using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Core;
 using Union.Playwright.NUnit.Pages.Interfaces;
 using Union.Playwright.NUnit.Services;
@@ -10,7 +12,7 @@ namespace Union.Playwright.NUnit.TestSession
     internal class BrowserState : IBrowserState
     {
         private readonly IPageResolver _pageResolver;
-        public IModalWindow? ModalWindow { get; private set; }
+        public IUnionModal? ModalWindow { get; private set; }
         public IUnionPage? Page { get; private set; }
         public string? LastActualizedUrl { get; private set; }
         public string? LastDiagnosticMessage { get; private set; }
@@ -52,6 +54,7 @@ namespace Union.Playwright.NUnit.TestSession
         private async ValueTask ActualizeInternalAsync(IPage page, bool useAsync)
         {
             this.Page = null;
+            this.ModalWindow = null;
             this.LastActualizedUrl = page.Url;
 
             var baseUrlPattern = this._pageResolver.BaseUrlPattern;
@@ -92,6 +95,36 @@ namespace Union.Playwright.NUnit.TestSession
             {
                 this.LastDiagnosticMessage =
                     $"Base URL did not match (level: {result.Level}). URL: '{page.Url}'";
+            }
+
+            if (this.Page != null)
+            {
+                await ActualizeModalAsync(useAsync);
+            }
+        }
+
+        private async ValueTask ActualizeModalAsync(bool useAsync)
+        {
+            if (this.Page!.Modals == null) return;
+
+            foreach (var alert in this.Page.Modals)
+            {
+                bool isVisible;
+
+                if (useAsync && alert is ComponentBase component)
+                {
+                    isVisible = await component.IsVisibleAsync();
+                }
+                else
+                {
+                    isVisible = alert.IsVisible();
+                }
+
+                if (isVisible)
+                {
+                    this.ModalWindow = alert;
+                    return;
+                }
             }
         }
 

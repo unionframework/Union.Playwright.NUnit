@@ -32,6 +32,12 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
     /// </summary>
     public IBrowserGo Go => _go ??= new BrowserGo(this, State, _testSettings);
 
+    private IBrowserAction? _action;
+    /// <summary>
+    /// Gets the action helper for this service.
+    /// </summary>
+    public IBrowserAction Action => _action ??= new BrowserAction(this, State);
+
     /// <summary>
     /// Initializes a new instance of the service.
     /// </summary>

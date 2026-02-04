@@ -19,7 +19,7 @@ namespace Union.Playwright.NUnit.Pages.Interfaces
 
         BaseUrlInfo BaseUrlInfo { get; set; }
 
-        List<IModalWindow> ModalWindows { get; }
+        List<IUnionModal> Modals { get; }
 
         List<ILoader> Loaders { get; }
 

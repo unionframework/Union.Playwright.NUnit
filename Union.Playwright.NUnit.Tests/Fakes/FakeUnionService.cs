@@ -33,6 +33,8 @@ public class FakeUnionService : IUnionService, IBrowserContextAware
 
     public IBrowserGo Go { get; }
 
+    public IBrowserAction Action { get; } = Substitute.For<IBrowserAction>();
+
     /// <summary>
     /// Sets the browser context for this service.
     /// Called by ScopedTestSession.SetContext() during test setup.

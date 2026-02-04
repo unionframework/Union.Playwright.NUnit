@@ -14,8 +14,6 @@ namespace Union.Playwright.NUnit.Pages
 
         public List<ILoader> ProgressBars { get; private set; }
 
-        public List<IModalWindow> Alerts { get; private set; }
-
         public BaseUrlInfo BaseUrlInfo { get; set; }
 
         public List<Cookie> Cookies { get; set; }
@@ -26,7 +24,7 @@ namespace Union.Playwright.NUnit.Pages
 
         public abstract string AbsolutePath { get; }
 
-        public List<IModalWindow> ModalWindows { get; private set; }
+        public List<IUnionModal> Modals { get; private set; }
 
         public List<ILoader> Loaders { get; private set; }
 
@@ -43,8 +41,7 @@ namespace Union.Playwright.NUnit.Pages
             this.Data = new Dictionary<string, string>();
             this.Cookies = new List<Cookie>();
             this.ProgressBars = new List<ILoader>();
-            this.Alerts = new List<IModalWindow>();
-            this.ModalWindows = new List<IModalWindow>();
+            this.Modals = new List<IUnionModal>();
             this.Loaders = new List<ILoader>();
             this.Overlays = new List<IOverlay>();
         }
@@ -62,9 +59,9 @@ namespace Union.Playwright.NUnit.Pages
 
         public void RegisterComponent(IComponent component)
         {
-            if (component is IModalWindow)
+            if (component is IUnionModal)
             {
-                Alerts.Add(component as IModalWindow);
+                Modals.Add(component as IUnionModal);
             }
             else if (component is ILoader)
             {
