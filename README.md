@@ -119,7 +119,35 @@ var profile = myApp.State.PageAs<UserProfilePage>();
 Console.WriteLine(profile?.UserId); // "42"
 ```
 
-### 5. Components
+### 5. Actions (`Action`)
+
+Click-and-wait methods that interact with the page and actualize browser state in one step. Uses Playwright's native waiting (no polling or `Thread.Sleep`).
+
+```csharp
+// Click a link and wait for redirect — returns typed page or null
+var dashboard = await myApp.Action
+    .ClickAndWaitForRedirectAsync<DashboardPage>(page.Locator("a.dashboard-link"));
+
+if (dashboard != null)
+{
+    // State is actualized — service knows we're on DashboardPage
+    myApp.State.PageIs<DashboardPage>().Should().BeTrue();
+}
+
+// Click a button and wait for a modal to appear — returns typed modal or null
+var confirmDialog = await myApp.Action
+    .ClickAndWaitForAlertAsync<ConfirmDialog>(page.Locator("button.delete"));
+
+if (confirmDialog != null)
+{
+    // Modal is actualized — available via state as well
+    confirmDialog.Accept();
+}
+```
+
+Both methods return `null` when the expected result doesn't happen (no redirect, or modal didn't appear within Playwright's timeout). This lets you handle unexpected states gracefully in tests instead of getting timeout exceptions.
+
+### 6. Components
 
 Components are reusable UI building blocks that attach to pages (or to other components) via the `[UnionInit]` attribute.
 
@@ -183,7 +211,7 @@ QuestionItem random = await page.Questions.FindRandomAsync();
 bool visible = await single.Title.IsVisibleAsync();
 ```
 
-### 6. SCSS selectors
+### 7. SCSS selectors
 
 The framework includes a custom selector language that compiles to both CSS and XPath. It extends standard CSS syntax with XPath-only features:
 
@@ -358,6 +386,39 @@ foreach (var item in items)
 }
 ```
 
+### Click and wait for redirect
+
+**Before:**
+```csharp
+await page.Locator("a.dashboard").ClickAsync();
+await page.WaitForURLAsync("**/dashboard");
+// manual URL check, no page object
+```
+
+**After:**
+```csharp
+var dashboard = await myApp.Action
+    .ClickAndWaitForRedirectAsync<DashboardPage>(page.Locator("a.dashboard"));
+// returns typed page with extracted params, state actualized automatically
+```
+
+### Click and wait for modal
+
+**Before:**
+```csharp
+await page.Locator("button.delete").ClickAsync();
+await page.Locator(".confirm-dialog").WaitForAsync();
+// manual locator management, no typed modal object
+```
+
+**After:**
+```csharp
+var dialog = await myApp.Action
+    .ClickAndWaitForAlertAsync<ConfirmDialog>(page.Locator("button.delete"));
+// returns typed modal, state.ModalWindow also set
+dialog?.Accept();
+```
+
 ### Knowing which page you're on
 
 **Before:**
@@ -393,6 +454,7 @@ myApp.State.PageIs<DashboardPage>().Should().BeTrue();
 |---|---|
 | `abstract string BaseUrl` | Application base URL |
 | `IBrowserGo Go` | Navigation API |
+| `IBrowserAction Action` | Click-and-wait actions API |
 | `IBrowserState State` | Current page state |
 
 ### IBrowserGo
@@ -405,14 +467,22 @@ myApp.State.PageIs<DashboardPage>().Should().BeTrue();
 | `Task Refresh()` | Refresh current page |
 | `Task Back()` | Browser back |
 
+### IBrowserAction
+
+| Method | Description |
+|---|---|
+| `Task<TPage?> ClickAndWaitForRedirectAsync<TPage>(ILocator)` | Click, wait for URL change, actualize, return typed page or null |
+| `Task<TModal?> ClickAndWaitForAlertAsync<TModal>(ILocator)` | Click, wait for modal visible, actualize, return typed modal or null |
+
 ### IBrowserState
 
 | Member | Description |
 |---|---|
 | `IUnionPage? Page` | Current resolved page |
+| `IUnionModal? ModalWindow` | Current visible modal (detected during actualization) |
 | `T? PageAs<T>()` | Current page cast to T, or null |
 | `bool PageIs<T>()` | Check if current page matches type |
-| `void Actualize(IPage page)` | Re-resolve current URL to a page |
+| `ValueTask ActualizeAsync(IPage page)` | Re-resolve current URL to a page and detect visible modals |
 
 ### ComponentBase
 
