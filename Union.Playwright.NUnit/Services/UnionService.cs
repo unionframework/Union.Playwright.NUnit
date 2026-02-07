@@ -21,27 +21,14 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
     private IBrowserContext? _browserContext;
 
     private IBrowserState? _state;
-    /// <summary>
-    /// Gets the current browser state for this service.
-    /// </summary>
     public IBrowserState State => _state ??= new BrowserState(this);
 
     private IBrowserGo? _go;
-    /// <summary>
-    /// Gets the navigation helper for this service.
-    /// </summary>
     public IBrowserGo Go => _go ??= new BrowserGo(this, State, _testSettings);
 
     private IBrowserAction? _action;
-    /// <summary>
-    /// Gets the action helper for this service.
-    /// </summary>
     public IBrowserAction Action => _action ??= new BrowserAction(this, State);
 
-    /// <summary>
-    /// Initializes a new instance of the service.
-    /// </summary>
-    /// <param name="testSettings">Optional test settings.</param>
     public UnionService(TestSettings? testSettings = null)
     {
         _testSettings = testSettings ?? TestSettings.Default;
@@ -49,27 +36,16 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
         _router.RegisterDerivedPages<T>();
     }
 
-    /// <summary>
-    /// Gets the base URL for this service.
-    /// </summary>
     public abstract string BaseUrl { get; }
 
-    private Uri BaseUri => new Uri(BaseUrl);
+    private Uri? _baseUri;
+    private Uri BaseUri => _baseUri ??= new Uri(BaseUrl);
 
-    /// <summary>
-    /// Gets the absolute path portion of the base URL.
-    /// </summary>
     public string AbsolutePath => BaseUri.AbsolutePath == "/" ? "" : BaseUri.AbsolutePath;
 
-    /// <summary>
-    /// Gets the host (authority) portion of the base URL.
-    /// </summary>
     public string Host => BaseUri.Authority;
 
     private BaseUrlPattern? _baseUrlPattern;
-    /// <summary>
-    /// Gets the URL pattern for matching requests to this service.
-    /// </summary>
     public BaseUrlPattern BaseUrlPattern => _baseUrlPattern ??= BuildBaseUrlPattern();
 
     private BaseUrlPattern BuildBaseUrlPattern()
@@ -84,10 +60,6 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
 
     private BaseUrlInfo DefaultBaseUrlInfo => new BaseUrlInfo(Host, AbsolutePath);
 
-    /// <summary>
-    /// Sets the browser context for this service.
-    /// Called by ScopedTestSession.SetContext() during test setup.
-    /// </summary>
     void IBrowserContextAware.SetBrowserContext(IBrowserContext context)
     {
         _browserContext = context;
@@ -128,17 +100,11 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
         return _page;
     }
 
-    /// <summary>
-    /// Async page resolution supporting MatchablePage with DOM checks.
-    /// </summary>
     public ValueTask<IUnionPage?> GetPageAsync(RequestData requestData, BaseUrlInfo baseUrlInfo, IPage playwrightPage)
     {
         return _router.GetPageAsync(requestData, baseUrlInfo, playwrightPage);
     }
 
-    /// <summary>
-    /// Synchronous page resolution. Does not support MatchablePage.
-    /// </summary>
     [Obsolete("Use GetPageAsync instead. This method does not support MatchablePage.")]
     public IUnionPage? GetPage(RequestData requestData, BaseUrlInfo baseUrlInfo)
     {
@@ -147,17 +113,11 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
 #pragma warning restore CS0618
     }
 
-    /// <summary>
-    /// Gets the request data for navigating to the specified page.
-    /// </summary>
     public RequestData GetRequestData(IUnionPage page)
     {
         return _router.GetRequest(page, DefaultBaseUrlInfo);
     }
 
-    /// <summary>
-    /// Checks if the specified page belongs to this service.
-    /// </summary>
     public bool HasPage(IUnionPage page)
     {
         return _router.HasPage(page);

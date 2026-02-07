@@ -6,102 +6,101 @@ using Union.Playwright.NUnit.Pages.Interfaces;
 using Union.Playwright.NUnit.Routing;
 using Union.Playwright.NUnit.SCSS;
 
-namespace Union.Playwright.NUnit.Pages
+namespace Union.Playwright.NUnit.Pages;
+
+public abstract class UnionPage : IUnionPage, IContainer
 {
-    public abstract class UnionPage : IUnionPage, IContainer
+    public IPage PlaywrightPage { get; private set; }
+
+    public List<ILoader> ProgressBars { get; private set; }
+
+    public BaseUrlInfo BaseUrlInfo { get; set; }
+
+    public List<Cookie> Cookies { get; set; }
+
+    public Dictionary<string, string> Params { get; set; }
+
+    public Dictionary<string, string> Data { get; set; }
+
+    public abstract string AbsolutePath { get; }
+
+    public List<IUnionModal> Modals { get; private set; }
+
+    public List<ILoader> Loaders { get; private set; }
+
+    public List<IOverlay> Overlays { get; private set; }
+
+    public List<ComponentBase> Components { get; private set; }
+
+    // IContainer implementation
+    public IUnionPage ParentPage => this;
+
+    public virtual string RootScss => null;
+
+    protected UnionPage()
     {
-        public IPage PlaywrightPage { get; private set; }
+        this.Params = new Dictionary<string, string>();
+        this.Data = new Dictionary<string, string>();
+        this.Cookies = new List<Cookie>();
+        this.ProgressBars = new List<ILoader>();
+        this.Modals = new List<IUnionModal>();
+        this.Loaders = new List<ILoader>();
+        this.Overlays = new List<IOverlay>();
+        this.Components = new List<ComponentBase>();
+    }
 
-        public List<ILoader> ProgressBars { get; private set; }
+    public void Activate(IPage page)
+    {
+        this.PlaywrightPage = page;
+        WebPageBuilder.InitPage(this);
+    }
 
-        public BaseUrlInfo BaseUrlInfo { get; set; }
+    public virtual Task WaitLoadedAsync()
+    {
+        return Task.CompletedTask;
+    }
 
-        public List<Cookie> Cookies { get; set; }
-
-        public Dictionary<string, string> Params { get; set; }
-
-        public Dictionary<string, string> Data { get; set; }
-
-        public abstract string AbsolutePath { get; }
-
-        public List<IUnionModal> Modals { get; private set; }
-
-        public List<ILoader> Loaders { get; private set; }
-
-        public List<IOverlay> Overlays { get; private set; }
-
-        public List<ComponentBase> Components { get; private set; }
-
-        // IContainer implementation
-        public IUnionPage ParentPage => this;
-
-        public virtual string RootScss => null;
-
-        protected UnionPage()
+    public void RegisterComponent(IComponent component)
+    {
+        if (component is IUnionModal modal)
         {
-            this.Params = new Dictionary<string, string>();
-            this.Data = new Dictionary<string, string>();
-            this.Cookies = new List<Cookie>();
-            this.ProgressBars = new List<ILoader>();
-            this.Modals = new List<IUnionModal>();
-            this.Loaders = new List<ILoader>();
-            this.Overlays = new List<IOverlay>();
-            this.Components = new List<ComponentBase>();
+            Modals.Add(modal);
+        }
+        else if (component is ILoader loader)
+        {
+            ProgressBars.Add(loader);
+        }
+    }
+
+    public T RegisterComponent<T>(string componentName, params object[] args) where T : IComponent
+    {
+        var component = CreateComponent<T>(args);
+        RegisterComponent(component);
+        component.ComponentName = componentName;
+        return component;
+    }
+
+    public T CreateComponent<T>(params object[] args) where T : IComponent
+    {
+        return WebPageBuilder.CreateComponent<T>(this, args);
+    }
+
+    public RequestData GetRequest(BaseUrlInfo defaultBaseUrlInfo)
+    {
+        var url =
+            new UriAssembler(BaseUrlInfo, AbsolutePath, Data, Params).Assemble(
+                defaultBaseUrlInfo);
+        return new RequestData(url);
+    }
+
+    public string InnerScss(string relativeScss, params object[] args)
+    {
+        var formatted = string.Format(relativeScss, args);
+        if (this.RootScss == null)
+        {
+            return formatted;
         }
 
-        public void Activate(IPage page)
-        {
-            this.PlaywrightPage = page;
-            WebPageBuilder.InitPage(this);
-        }
-
-        public virtual Task WaitLoadedAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        public void RegisterComponent(IComponent component)
-        {
-            if (component is IUnionModal)
-            {
-                Modals.Add(component as IUnionModal);
-            }
-            else if (component is ILoader)
-            {
-                ProgressBars.Add(component as ILoader);
-            }
-        }
-
-        public T RegisterComponent<T>(string componentName, params object[] args) where T : IComponent
-        {
-            var component = CreateComponent<T>(args);
-            RegisterComponent(component);
-            component.ComponentName = componentName;
-            return component;
-        }
-
-        public T CreateComponent<T>(params object[] args) where T : IComponent
-        {
-            return WebPageBuilder.CreateComponent<T>(this, args);
-        }
-
-        public RequestData GetRequest(BaseUrlInfo defaultBaseUrlInfo)
-        {
-            var url =
-                new UriAssembler(BaseUrlInfo, AbsolutePath, Data, Params).Assemble(
-                    defaultBaseUrlInfo);
-            return new RequestData(url);
-        }
-
-        public string InnerScss(string relativeScss, params object[] args)
-        {
-            var formatted = string.Format(relativeScss, args);
-            if (this.RootScss == null)
-            {
-                return formatted;
-            }
-
-            return ScssBuilder.Concat(this.RootScss, formatted).Value;
-        }
+        return ScssBuilder.Concat(this.RootScss, formatted).Value;
     }
 }

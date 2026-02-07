@@ -20,8 +20,8 @@ public class BrowserAction : IBrowserAction
 
     public BrowserAction(IUnionService service, IBrowserState state)
     {
-        this._service = service ?? throw new ArgumentNullException(nameof(service));
-        this._state = state ?? throw new ArgumentNullException(nameof(state));
+        _service = service ?? throw new ArgumentNullException(nameof(service));
+        _state = state ?? throw new ArgumentNullException(nameof(state));
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public class BrowserAction : IBrowserAction
     public async Task<TPage?> ClickAndWaitForRedirectAsync<TPage>(ILocator locator)
         where TPage : class, IUnionPage
     {
-        var page = await this._service.GetOrCreatePageAsync();
+        var page = await _service.GetOrCreatePageAsync();
         var oldUrl = page.Url;
 
         await locator.ClickAsync();
@@ -46,8 +46,8 @@ public class BrowserAction : IBrowserAction
             return null;
         }
 
-        await this._state.ActualizeAsync(page);
-        return this._state.PageAs<TPage>();
+        await _state.ActualizeAsync(page);
+        return _state.PageAs<TPage>();
     }
 
     /// <summary>
@@ -58,9 +58,9 @@ public class BrowserAction : IBrowserAction
     public async Task<TModal?> ClickAndWaitForAlertAsync<TModal>(ILocator locator)
         where TModal : class, IUnionModal
     {
-        var page = await this._service.GetOrCreatePageAsync();
+        var page = await _service.GetOrCreatePageAsync();
 
-        var currentPage = this._state.Page;
+        var currentPage = _state.Page;
         if (currentPage == null) return null;
 
         var modal = currentPage.Modals.OfType<TModal>().FirstOrDefault();
@@ -84,8 +84,8 @@ public class BrowserAction : IBrowserAction
             }
         }
 
-        await this._state.ActualizeAsync(page);
-        return this._state.ModalWindow as TModal;
+        await _state.ActualizeAsync(page);
+        return _state.ModalWindow as TModal;
     }
 
     /// <summary>
@@ -96,9 +96,9 @@ public class BrowserAction : IBrowserAction
     public async Task<TComponent> ClickAndWaitForAsync<TComponent>(ILocator locator)
         where TComponent : ComponentBase
     {
-        var page = await this._service.GetOrCreatePageAsync();
+        var page = await _service.GetOrCreatePageAsync();
 
-        var currentPage = this._state.Page;
+        var currentPage = _state.Page;
         if (currentPage == null)
             throw new InvalidOperationException(
                 $"No page resolved. Navigate first using Go.ToPage<T>().");

@@ -34,16 +34,12 @@ namespace Union.Playwright.NUnit.Pages
                 var componentType = GetMemberType(member);
                 var component = CreateComponent(page, componentContainer, componentType, attribute);
 
-                if (component is ComponentBase c)
-                {
-                    c.ComponentName = attribute.ComponentName ?? member.Name;
-                    c.FrameScss = attribute.FrameXcss;
-                }
-
                 SetMemberValue(componentContainer, member, component);
 
                 if (component is ComponentBase cb)
                 {
+                    cb.ComponentName = attribute.ComponentName ?? member.Name;
+                    cb.FrameScss = attribute.FrameXcss;
                     page.Components.Add(cb);
                 }
 
@@ -55,7 +51,7 @@ namespace Union.Playwright.NUnit.Pages
         {
             var args = new List<object> { page };
 
-            if (attribute.Args != null && attribute.Args.Length > 0)
+            if (attribute.Args is { Length: > 0 })
             {
                 var container = componentContainer as IContainer;
                 var processedArgs = new object[attribute.Args.Length];
