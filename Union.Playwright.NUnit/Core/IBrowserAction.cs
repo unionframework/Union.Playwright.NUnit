@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.Playwright;
+using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Pages.Interfaces;
 
 namespace Union.Playwright.NUnit.Core
@@ -11,5 +12,8 @@ namespace Union.Playwright.NUnit.Core
 
         Task<TModal?> ClickAndWaitForAlertAsync<TModal>(ILocator locator)
             where TModal : class, IUnionModal;
+
+        Task<TComponent> ClickAndWaitForAsync<TComponent>(ILocator locator)
+            where TComponent : ComponentBase;
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Playwright;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Routing;
 
 namespace Union.Playwright.NUnit.Pages.Interfaces
@@ -24,6 +25,8 @@ namespace Union.Playwright.NUnit.Pages.Interfaces
         List<ILoader> Loaders { get; }
 
         List<IOverlay> Overlays { get; }
+
+        List<ComponentBase> Components { get; }
 
         Task WaitLoadedAsync();
 

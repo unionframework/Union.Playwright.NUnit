@@ -30,6 +30,8 @@ namespace Union.Playwright.NUnit.Pages
 
         public List<IOverlay> Overlays { get; private set; }
 
+        public List<ComponentBase> Components { get; private set; }
+
         // IContainer implementation
         public IUnionPage ParentPage => this;
 
@@ -44,6 +46,7 @@ namespace Union.Playwright.NUnit.Pages
             this.Modals = new List<IUnionModal>();
             this.Loaders = new List<ILoader>();
             this.Overlays = new List<IOverlay>();
+            this.Components = new List<ComponentBase>();
         }
 
         public void Activate(IPage page)

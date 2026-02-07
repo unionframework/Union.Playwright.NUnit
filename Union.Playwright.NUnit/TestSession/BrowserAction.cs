@@ -87,4 +87,47 @@ public class BrowserAction : IBrowserAction
         await this._state.ActualizeAsync(page);
         return this._state.ModalWindow as TModal;
     }
+
+    /// <summary>
+    /// Clicks the locator, finds a pre-registered component of type TComponent
+    /// on the current page, waits for its RootScss selector to become visible, and returns it.
+    /// Throws if no page is resolved or the component type is not registered.
+    /// </summary>
+    public async Task<TComponent> ClickAndWaitForAsync<TComponent>(ILocator locator)
+        where TComponent : ComponentBase
+    {
+        var page = await this._service.GetOrCreatePageAsync();
+
+        var currentPage = this._state.Page;
+        if (currentPage == null)
+            throw new InvalidOperationException(
+                $"No page resolved. Navigate first using Go.ToPage<T>().");
+
+        var component = currentPage.Components.OfType<TComponent>().FirstOrDefault();
+        if (component == null)
+            throw new InvalidOperationException(
+                $"Component {typeof(TComponent).Name} is not registered on " +
+                $"{currentPage.GetType().Name}. " +
+                $"Add a [UnionInit] field of this type to the page class.");
+
+        await locator.ClickAsync();
+
+        try
+        {
+            await page.Locator(component.RootScss)
+                .WaitForAsync(new LocatorWaitForOptions
+                {
+                    State = WaitForSelectorState.Visible
+                });
+        }
+        catch (TimeoutException)
+        {
+            throw new TimeoutException(
+                $"Component {typeof(TComponent).Name} " +
+                $"(RootScss: '{component.RootScss}') " +
+                $"did not become visible after clicking.");
+        }
+
+        return component;
+    }
 }

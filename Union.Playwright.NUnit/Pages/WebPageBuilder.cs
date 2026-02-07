@@ -41,6 +41,12 @@ namespace Union.Playwright.NUnit.Pages
                 }
 
                 SetMemberValue(componentContainer, member, component);
+
+                if (component is ComponentBase cb)
+                {
+                    page.Components.Add(cb);
+                }
+
                 InitComponents(page, component);
             }
         }
