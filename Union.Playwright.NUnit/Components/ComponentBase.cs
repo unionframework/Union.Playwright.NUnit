@@ -5,7 +5,7 @@ using Union.Playwright.NUnit.SCSS;
 
 namespace Union.Playwright.NUnit.Components
 {
-    public abstract class ComponentBase : IContainer
+    public abstract class ComponentBase : IContainer, IComponent
     {
         private string _rootScss;
 

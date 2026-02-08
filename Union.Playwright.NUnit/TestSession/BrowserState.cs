@@ -92,30 +92,18 @@ internal class BrowserState : IBrowserState
 
         if (this.Page != null)
         {
-            await ActualizeModalAsync(useAsync);
+            await ActualizeModalAsync();
         }
     }
 
-    private async ValueTask ActualizeModalAsync(bool useAsync)
+    private async ValueTask ActualizeModalAsync()
     {
         if (this.Page!.Modals == null) return;
-
-        foreach (var alert in this.Page.Modals)
+        foreach (var modal in this.Page.Modals)
         {
-            bool isVisible;
-
-            if (useAsync && alert is ComponentBase component)
+            if (await modal.IsVisibleAsync())
             {
-                isVisible = await component.IsVisibleAsync();
-            }
-            else
-            {
-                isVisible = alert.IsVisible();
-            }
-
-            if (isVisible)
-            {
-                this.ModalWindow = alert;
+                this.ModalWindow = modal;
                 return;
             }
         }

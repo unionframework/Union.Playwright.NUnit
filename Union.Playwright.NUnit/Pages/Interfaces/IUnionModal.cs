@@ -1,8 +1,10 @@
+using System.Threading.Tasks;
+
 namespace Union.Playwright.NUnit.Pages.Interfaces
 {
     public interface IUnionModal : IComponent
     {
-        void Dismiss();
-        void Accept();
+        Task DismissAsync();
+        Task AcceptAsync();
     }
 }

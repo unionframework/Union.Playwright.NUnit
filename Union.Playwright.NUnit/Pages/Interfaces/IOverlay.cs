@@ -1,7 +1,9 @@
-﻿namespace Union.Playwright.NUnit.Pages.Interfaces
+using System.Threading.Tasks;
+
+namespace Union.Playwright.NUnit.Pages.Interfaces
 {
     public interface IOverlay : IComponent
     {
-        void Close();
+        Task CloseAsync();
     }
 }

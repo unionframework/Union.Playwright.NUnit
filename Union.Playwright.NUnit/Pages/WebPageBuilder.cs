@@ -41,6 +41,14 @@ namespace Union.Playwright.NUnit.Pages
                     cb.ComponentName = attribute.ComponentName ?? member.Name;
                     cb.FrameScss = attribute.FrameXcss;
                     page.Components.Add(cb);
+
+                    // Auto-register in specialized collections
+                    if (cb is IUnionModal modal)
+                        page.Modals.Add(modal);
+                    else if (cb is ILoader loader)
+                        page.Loaders.Add(loader);
+                    else if (cb is IOverlay overlay)
+                        page.Overlays.Add(overlay);
                 }
 
                 InitComponents(page, component);
