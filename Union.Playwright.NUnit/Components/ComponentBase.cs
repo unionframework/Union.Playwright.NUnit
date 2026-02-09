@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Playwright;
 using System.Threading.Tasks;
 using Union.Playwright.NUnit.Core;
@@ -8,7 +9,7 @@ namespace Union.Playwright.NUnit.Components
 {
     public abstract class ComponentBase : IComponent
     {
-        private string _rootScss;
+        private readonly string _rootScss;
 
         public IUnionPage ParentPage { get; }
 
@@ -18,11 +19,11 @@ namespace Union.Playwright.NUnit.Components
 
         protected ComponentBase(IUnionPage parentPage, string rootScss = null)
         {
-            this.ParentPage = parentPage;
-            _rootScss = rootScss;
+            this.ParentPage = parentPage ?? throw new ArgumentNullException(nameof(parentPage));
+            this._rootScss = rootScss;
         }
 
-        public virtual string RootScss => _rootScss ?? "html";
+        public virtual string RootScss => this._rootScss ?? "html";
 
         protected IPage PlaywrightPage => this.ParentPage.PlaywrightPage;
 
@@ -34,6 +35,6 @@ namespace Union.Playwright.NUnit.Components
 
         protected IBrowserAction Action => this.ParentPage.Service.Action;
 
-        public async Task<bool> IsVisibleAsync() => await this.Root.IsVisibleAsync();
+        public Task<bool> IsVisibleAsync() => this.Root.IsVisibleAsync();
     }
 }

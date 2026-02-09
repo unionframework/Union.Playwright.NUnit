@@ -7,7 +7,7 @@ namespace Union.Playwright.NUnit.Tests.Integration.StackOverflow
     public class QuestionTagList : ContainerBase
     {
         [UnionInit("root:a.s-tag")]
-        public Element TagLink { get; set; }
+        public UnionElement TagLink { get; set; }
 
         public QuestionTagList(IUnionPage parentPage, string rootScss)
             : base(parentPage, rootScss)

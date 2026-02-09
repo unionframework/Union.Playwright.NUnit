@@ -103,10 +103,7 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         firstItem!.Tags.Should().NotBeNull();
         firstItem.Tags.TagLink.Should().NotBeNull();
 
-        // Get the service's page for locator access
-        var playwrightPage = await Session.SO.GetOrCreatePageAsync();
-        var tagLinkLocator = playwrightPage.Locator(firstItem.Tags.TagLink.RootScss).First;
-        var isVisible = await tagLinkLocator.IsVisibleAsync();
+        var isVisible = await firstItem.Tags.TagLink.First.IsVisibleAsync();
         isVisible.Should().BeTrue();
     }
 }
