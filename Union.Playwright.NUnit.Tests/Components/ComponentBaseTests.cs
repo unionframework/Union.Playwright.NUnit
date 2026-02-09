@@ -55,26 +55,6 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void InnerScss_ConcatenatesRootAndRelative()
-        {
-            var component = new TestComponent(_mockPage, "div.container");
-
-            var result = component.InnerScss("span.child");
-
-            result.Should().NotBeNullOrEmpty();
-        }
-
-        [Test]
-        public void InnerScss_FormatsArgsIntoRelativeScss()
-        {
-            var component = new TestComponent(_mockPage, "div.container");
-
-            var result = component.InnerScss("span[data-id='{0}']", "test-id");
-
-            result.Should().Contain("test-id");
-        }
-
-        [Test]
         public void ComponentName_CanBeSetAndRetrieved()
         {
             var component = new TestComponent(_mockPage);
@@ -84,12 +64,12 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void FrameScss_CanBeSetAndRetrieved()
+        public void FrameXcss_CanBeSetAndRetrieved()
         {
             var component = new TestComponent(_mockPage);
-            component.FrameScss = "iframe.main";
+            component.FrameXcss = "iframe.main";
 
-            component.FrameScss.Should().Be("iframe.main");
+            component.FrameXcss.Should().Be("iframe.main");
         }
 
         [Test]

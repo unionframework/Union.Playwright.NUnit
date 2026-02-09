@@ -21,7 +21,7 @@ public abstract class UnionService<T> : IUnionService, IBrowserContextAware wher
     private IBrowserContext? _browserContext;
 
     private IBrowserState? _state;
-    public IBrowserState State => _state ??= new BrowserState(this);
+    public IBrowserState State => _state ??= new BrowserState(this, this);
 
     private IBrowserGo? _go;
     public IBrowserGo Go => _go ??= new BrowserGo(this, State, _testSettings);

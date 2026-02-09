@@ -11,6 +11,7 @@ namespace Union.Playwright.NUnit.TestSession;
 internal class BrowserState : IBrowserState
 {
     private readonly IPageResolver _pageResolver;
+    private readonly IUnionService _service;
     public IUnionModal? ModalWindow { get; private set; }
     public IUnionPage? Page { get; private set; }
     public string? LastActualizedUrl { get; private set; }
@@ -28,9 +29,10 @@ internal class BrowserState : IBrowserState
         }
     }
 
-    public BrowserState(IPageResolver pageResolver)
+    public BrowserState(IPageResolver pageResolver, IUnionService service)
     {
         _pageResolver = pageResolver;
+        _service = service;
     }
 
     public async ValueTask ActualizeAsync(IPage page)
@@ -75,7 +77,7 @@ internal class BrowserState : IBrowserState
 
             if (resolvedPage != null)
             {
-                resolvedPage.Activate(page);
+                resolvedPage.Activate(page, _service);
                 this.Page = resolvedPage;
                 this.LastDiagnosticMessage = $"Resolved to {resolvedPage.GetType().Name}";
             }

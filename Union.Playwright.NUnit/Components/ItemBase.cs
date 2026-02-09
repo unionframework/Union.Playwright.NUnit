@@ -1,8 +1,6 @@
-using Union.Playwright.NUnit.Pages.Interfaces;
-
 namespace Union.Playwright.NUnit.Components
 {
-    public abstract class ItemBase : ComponentBase
+    public abstract class ItemBase : ContainerBase
     {
         private string _itemRootScss;
 

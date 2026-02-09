@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Routing;
+using Union.Playwright.NUnit.Services;
 
 namespace Union.Playwright.NUnit.Pages.Interfaces
 {
@@ -11,6 +12,8 @@ namespace Union.Playwright.NUnit.Pages.Interfaces
         string AbsolutePath { get; }
 
         IPage PlaywrightPage { get; }
+
+        IUnionService Service { get; }
 
         List<Cookie> Cookies { get; set; }
 
@@ -28,10 +31,12 @@ namespace Union.Playwright.NUnit.Pages.Interfaces
 
         List<ComponentBase> Components { get; }
 
+        void RegisterComponent(IComponent component);
+
         Task WaitLoadedAsync();
 
         RequestData GetRequest(BaseUrlInfo defaultBaseUrlInfo);
 
-        void Activate(IPage page);
+        void Activate(IPage page, IUnionService service);
     }
 }

@@ -4,15 +4,15 @@ using System.Threading.Tasks;
 using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Pages.Interfaces;
 using Union.Playwright.NUnit.Routing;
-using Union.Playwright.NUnit.SCSS;
+using Union.Playwright.NUnit.Services;
 
 namespace Union.Playwright.NUnit.Pages;
 
-public abstract class UnionPage : IUnionPage, IContainer
+public abstract class UnionPage : IUnionPage
 {
     public IPage PlaywrightPage { get; private set; }
 
-    public List<ILoader> ProgressBars { get; private set; }
+    public IUnionService Service { get; private set; }
 
     public BaseUrlInfo BaseUrlInfo { get; set; }
 
@@ -32,26 +32,21 @@ public abstract class UnionPage : IUnionPage, IContainer
 
     public List<ComponentBase> Components { get; private set; }
 
-    // IContainer implementation
-    public IUnionPage ParentPage => this;
-
-    public virtual string RootScss => null;
-
     protected UnionPage()
     {
         this.Params = new Dictionary<string, string>();
         this.Data = new Dictionary<string, string>();
         this.Cookies = new List<Cookie>();
-        this.ProgressBars = new List<ILoader>();
         this.Modals = new List<IUnionModal>();
         this.Loaders = new List<ILoader>();
         this.Overlays = new List<IOverlay>();
         this.Components = new List<ComponentBase>();
     }
 
-    public void Activate(IPage page)
+    public void Activate(IPage page, IUnionService service)
     {
         this.PlaywrightPage = page;
+        this.Service = service;
         WebPageBuilder.InitPage(this);
     }
 
@@ -62,14 +57,15 @@ public abstract class UnionPage : IUnionPage, IContainer
 
     public void RegisterComponent(IComponent component)
     {
+        if (component is ComponentBase cb)
+            Components.Add(cb);
+
         if (component is IUnionModal modal)
-        {
             Modals.Add(modal);
-        }
         else if (component is ILoader loader)
-        {
-            ProgressBars.Add(loader);
-        }
+            Loaders.Add(loader);
+        else if (component is IOverlay overlay)
+            Overlays.Add(overlay);
     }
 
     public T RegisterComponent<T>(string componentName, params object[] args) where T : IComponent
@@ -91,16 +87,5 @@ public abstract class UnionPage : IUnionPage, IContainer
             new UriAssembler(BaseUrlInfo, AbsolutePath, Data, Params).Assemble(
                 defaultBaseUrlInfo);
         return new RequestData(url);
-    }
-
-    public string InnerScss(string relativeScss, params object[] args)
-    {
-        var formatted = string.Format(relativeScss, args);
-        if (this.RootScss == null)
-        {
-            return formatted;
-        }
-
-        return ScssBuilder.Concat(this.RootScss, formatted).Value;
     }
 }

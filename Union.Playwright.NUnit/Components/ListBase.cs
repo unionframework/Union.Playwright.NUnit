@@ -6,7 +6,7 @@ using Union.Playwright.NUnit.Pages.Interfaces;
 
 namespace Union.Playwright.NUnit.Components
 {
-    public abstract class ListBase<T> : ComponentBase where T : ItemBase
+    public abstract class ListBase<T> : ContainerBase where T : ItemBase
     {
         protected ListBase(IUnionPage parentPage, string rootScss = null)
             : base(parentPage, rootScss)

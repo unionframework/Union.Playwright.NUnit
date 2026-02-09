@@ -8,7 +8,7 @@ namespace Union.Playwright.NUnit.Pages.Interfaces
 
         string ComponentName { get; set; }
 
-        string FrameScss { get; set; }
+        string FrameXcss { get; set; }
 
         Task<bool> IsVisibleAsync();
     }

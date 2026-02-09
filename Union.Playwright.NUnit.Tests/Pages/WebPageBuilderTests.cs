@@ -48,8 +48,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         }
 
         // Legacy: TestContainer : ContainerBase(IPage, string rootScss)
-        // New: TestContainer : ComponentBase (which is IContainer)
-        private class TestContainer : ComponentBase
+        private class TestContainer : ContainerBase
         {
             public TestContainer(IUnionPage parent, string rootScss = null)
                 : base(parent, rootScss)
@@ -118,7 +117,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         #region Fixture Classes for Nested Components
 
         // Legacy: Level1/2/3Container : ContainerBase — uses root: prefix
-        private class Level3Container : ComponentBase
+        private class Level3Container : ContainerBase
         {
             [UnionInit("root:span.leaf")]
             public TestComponent Leaf;
@@ -129,7 +128,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             }
         }
 
-        private class Level2Container : ComponentBase
+        private class Level2Container : ContainerBase
         {
             [UnionInit("root:div.l3")]
             public Level3Container Level3;
@@ -140,7 +139,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             }
         }
 
-        private class Level1Container : ComponentBase
+        private class Level1Container : ContainerBase
         {
             [UnionInit("root:div.l2")]
             public Level2Container Level2;
@@ -195,7 +194,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         #region Fixture Classes for Selector - root: prefix
 
         // Legacy: uses root: prefix to mark args for concatenation
-        private class RootPrefixSelectorContainer : ComponentBase
+        private class RootPrefixSelectorContainer : ContainerBase
         {
             [UnionInit("root:div[@class='child']")]
             public TestComponent RootPrefixed;
@@ -207,7 +206,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         }
 
         // Legacy: non-prefixed selector should pass through unchanged
-        private class NonPrefixedSelectorContainer : ComponentBase
+        private class NonPrefixedSelectorContainer : ContainerBase
         {
             [UnionInit("//span[@id='absolute']")]
             public TestComponent NonPrefixed;
@@ -231,7 +230,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         #region Fixture Classes for Multi-Arg Selector
 
         // Legacy: MultiArgContainer : ContainerBase — root: on first arg only
-        private class MultiArgContainer : ComponentBase
+        private class MultiArgContainer : ContainerBase
         {
             [UnionInit("root:div", "//span")]
             public TwoArgComponent Child;
@@ -247,7 +246,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         #region Fixture Classes for Nested Container Selectors
 
         // Legacy: OuterContainer/InnerContainer : ContainerBase — root: prefix
-        private class InnerContainer : ComponentBase
+        private class InnerContainer : ContainerBase
         {
             [UnionInit("root:span.leaf")]
             public TestComponent Leaf;
@@ -258,7 +257,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             }
         }
 
-        private class OuterContainer : ComponentBase
+        private class OuterContainer : ContainerBase
         {
             [UnionInit("root:div.inner")]
             public InnerContainer Inner;
@@ -274,7 +273,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
         #region Fixture Classes from WebPageBuilderTest.cs
 
         // Legacy: Container : ContainerBase — root: and non-prefixed side by side
-        private class LegacySelectorContainer : ComponentBase
+        private class LegacySelectorContainer : ContainerBase
         {
             [UnionInit("root:div[text()='mytext']")]
             public TestComponent Component1;
@@ -379,17 +378,10 @@ namespace Union.Playwright.NUnit.Tests.Pages
         [Test]
         public void CreateItems_EachItemHasCorrectId()
         {
-            // Legacy used WebPageBuilder.CreateItems<TestItem>(container, ids)
-            // New framework doesn't have CreateItems<T>() yet.
-            // TODO: Replace with WebPageBuilder.CreateItems<T>() when implemented.
             var container = new TestContainer(_page, "//*[@id='list']");
             var ids = new[] { "a", "b", "c" };
 
-            var items = new TestItem[ids.Length];
-            for (var i = 0; i < ids.Length; i++)
-            {
-                items[i] = (TestItem)Activator.CreateInstance(typeof(TestItem), container, ids[i]);
-            }
+            var items = WebPageBuilder.CreateItems<TestItem>(container, ids);
 
             items.Should().HaveCount(3);
             items[0].Id.Should().Be("a");
@@ -483,14 +475,13 @@ namespace Union.Playwright.NUnit.Tests.Pages
         }
 
         [Test]
-        public void ComponentName_WhenNotSet_DefaultsToTypeName()
+        public void ComponentName_WhenNotSet_DefaultsToMemberName()
         {
-            // Legacy: defaults to type name "TestComponent"
             var container = new CustomNameContainer();
 
             WebPageBuilder.InitComponent(_page, container);
 
-            container.Unnamed.ComponentName.Should().Be("TestComponent");
+            container.Unnamed.ComponentName.Should().Be("Unnamed");
         }
 
         // ----------------------------------------------------------------
