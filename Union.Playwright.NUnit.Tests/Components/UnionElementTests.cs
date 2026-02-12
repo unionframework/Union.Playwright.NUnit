@@ -256,6 +256,16 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
+        public void RootLocator_ReturnsUnderlyingPlaywrightLocator()
+        {
+            var element = CreateElement();
+
+            var result = element.RootLocator;
+
+            result.Should().BeSameAs(_mockLocator);
+        }
+
+        [Test]
         public void Constructor_WhenRootScssIsNull_ThrowsArgumentException()
         {
             var act = () => new UnionElement(_mockPage, null);

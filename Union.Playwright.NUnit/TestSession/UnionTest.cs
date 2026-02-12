@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 using NUnit.Framework;
+using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Core;
 using Union.Playwright.NUnit.Services;
 
@@ -118,4 +119,7 @@ public abstract class UnionTest<TSession> : BrowserTest
         }
         return service;
     }
+
+    public static ILocatorAssertions Expect(UnionElement element) =>
+        Assertions.Expect(element.RootLocator);
 }

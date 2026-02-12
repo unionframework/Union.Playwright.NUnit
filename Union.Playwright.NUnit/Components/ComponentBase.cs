@@ -27,7 +27,7 @@ namespace Union.Playwright.NUnit.Components
 
         protected IPage PlaywrightPage => this.ParentPage.PlaywrightPage;
 
-        protected ILocator Root => this.PlaywrightPage.Locator(this.RootScss);
+        public ILocator RootLocator => this.PlaywrightPage.Locator(this.RootScss);
 
         protected IBrowserGo Go => this.ParentPage.Service.Go;
 
@@ -35,6 +35,6 @@ namespace Union.Playwright.NUnit.Components
 
         protected IBrowserAction Action => this.ParentPage.Service.Action;
 
-        public Task<bool> IsVisibleAsync() => this.Root.IsVisibleAsync();
+        public Task<bool> IsVisibleAsync() => this.RootLocator.IsVisibleAsync();
     }
 }
