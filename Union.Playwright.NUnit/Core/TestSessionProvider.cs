@@ -2,7 +2,6 @@ using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Playwright;
 using Union.Playwright.NUnit.Services;
 using Union.Playwright.NUnit.TestSession;
 
@@ -57,15 +56,13 @@ public abstract class TestSessionProvider<T> where T : class, ITestSession
     protected IHost TestHost => _testApp;
 
     /// <summary>
-    /// Creates a new test session with an isolated browser context.
+    /// Creates a new test session with DI scope but without a browser context.
+    /// The browser context should be attached later via ScopedTestSession.SetContext().
+    /// This enables Session to be available before ContextOptions() is called.
     /// </summary>
-    /// <param name="context">The browser context for this test.</param>
     /// <returns>A scoped test session that should be disposed after the test.</returns>
-    public ScopedTestSession CreateTestSession(IBrowserContext context)
+    public ScopedTestSession CreateTestSession()
     {
-        if (context == null)
-            throw new ArgumentNullException(nameof(context));
-
         // Create new DI scope for this test
         var scope = _testApp.Services.CreateAsyncScope();
         var provider = scope.ServiceProvider;
@@ -80,7 +77,7 @@ public abstract class TestSessionProvider<T> where T : class, ITestSession
             web.RegisterService(service);
         }
 
-        return new ScopedTestSession(session, scope, context);
+        return new ScopedTestSession(session, scope);
     }
 
     /// <summary>

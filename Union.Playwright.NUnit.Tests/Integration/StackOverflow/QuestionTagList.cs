@@ -4,10 +4,10 @@ using Union.Playwright.NUnit.Pages.Interfaces;
 
 namespace Union.Playwright.NUnit.Tests.Integration.StackOverflow
 {
-    public class QuestionTagList : ComponentBase
+    public class QuestionTagList : ContainerBase
     {
-        [UnionInit("a.s-tag")]
-        public Element TagLink { get; set; }
+        [UnionInit("root:a.s-tag")]
+        public UnionElement TagLink { get; set; }
 
         public QuestionTagList(IUnionPage parentPage, string rootScss)
             : base(parentPage, rootScss)

@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using Union.Playwright.NUnit.Attributes;
 using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Pages.Interfaces;
-using Union.Playwright.NUnit.SCSS;
 
 namespace Union.Playwright.NUnit.Pages
 {
@@ -12,6 +12,7 @@ namespace Union.Playwright.NUnit.Pages
     {
         public static void InitPage(UnionPage page)
         {
+            ArgumentNullException.ThrowIfNull(page);
             InitComponents(page, page);
         }
 
@@ -21,6 +22,8 @@ namespace Union.Playwright.NUnit.Pages
         /// </summary>
         public static void InitComponent(IUnionPage page, object component)
         {
+            ArgumentNullException.ThrowIfNull(page);
+            if (component == null) return;
             InitComponents(page, component);
         }
 
@@ -34,22 +37,27 @@ namespace Union.Playwright.NUnit.Pages
                 var componentType = GetMemberType(member);
                 var component = CreateComponent(page, componentContainer, componentType, attribute);
 
-                if (component is ComponentBase c)
+                SetMemberValue(componentContainer, member, component);
+
+                if (component is ComponentBase cb)
                 {
-                    c.ComponentName = attribute.ComponentName ?? member.Name;
-                    c.FrameScss = attribute.FrameXcss;
+                    cb.ComponentName = attribute.ComponentName ?? member.Name;
+                    cb.FrameXcss = attribute.FrameXcss;
                 }
 
-                SetMemberValue(componentContainer, member, component);
+                page.RegisterComponent((IComponent)component);
+
                 InitComponents(page, component);
             }
         }
 
         public static object CreateComponent(IUnionPage page, object componentContainer, Type type, UnionInit attribute)
         {
-            var args = new List<object> { page };
+            var args = typeof(ItemBase).IsAssignableFrom(type)
+                ? new List<object> { componentContainer }
+                : new List<object> { page };
 
-            if (attribute.Args != null && attribute.Args.Length > 0)
+            if (attribute.Args is { Length: > 0 })
             {
                 var container = componentContainer as IContainer;
                 var processedArgs = new object[attribute.Args.Length];
@@ -59,10 +67,7 @@ namespace Union.Playwright.NUnit.Pages
                 {
                     for (var i = 0; i < processedArgs.Length; i++)
                     {
-                        if (processedArgs[i] is string selectorArg)
-                        {
-                            processedArgs[i] = ScssBuilder.Concat(container.RootScss, selectorArg).Value;
-                        }
+                        processedArgs[i] = CreateInnerSelector(container, processedArgs[i]);
                     }
                 }
 
@@ -72,17 +77,53 @@ namespace Union.Playwright.NUnit.Pages
             return Activator.CreateInstance(type, args.ToArray());
         }
 
+        private static object CreateInnerSelector(IContainer container, object argument)
+        {
+            if (argument is string str && str.StartsWith("root:"))
+            {
+                return container.InnerScss(str.Replace("root:", string.Empty));
+            }
+            return argument;
+        }
+
+        public static List<T> CreateItems<T>(IContainer container, IEnumerable<string> ids)
+            where T : ItemBase
+        {
+            return ids.Select(id => (T)Activator.CreateInstance(typeof(T), container, id)).ToList();
+        }
+
+        public static T CreateComponent<T>(IContainer container, params object[] additionalArgs)
+            where T : IComponent
+        {
+            return CreateComponent<T>(container.ParentPage, container, additionalArgs);
+        }
+
+        public static T CreateComponent<T>(IUnionPage page, params object[] additionalArgs)
+            where T : IComponent
+        {
+            return CreateComponent<T>(page, null, additionalArgs);
+        }
+
+        public static T CreateComponent<T>(IUnionPage page, object componentContainer, params object[] additionalArgs)
+            where T : IComponent
+        {
+            var attr = new UnionInit(additionalArgs);
+            var component = (T)CreateComponent(page, componentContainer ?? page, typeof(T), attr);
+            InitComponents(page, component);
+            return component;
+        }
+
+        public static IComponent CreateComponent(IUnionPage page, Type type, params object[] additionalArgs)
+        {
+            var attr = new UnionInit(additionalArgs);
+            var component = (IComponent)CreateComponent(page, page, type, attr);
+            InitComponents(page, component);
+            return component;
+        }
+
         internal static T CreateComponent<T>(UnionPage pageBase, object[] args) where T : IComponent
         {
-            var allArgs = new List<object> { pageBase };
-            if (args != null)
-            {
-                allArgs.AddRange(args);
-            }
-
-            var component = (T)Activator.CreateInstance(typeof(T), allArgs.ToArray());
-            InitComponents(pageBase, component);
-            return component;
+            return CreateComponent<T>((IUnionPage)pageBase, args);
         }
 
         private static List<(MemberInfo Member, UnionInit Attribute)> GetInitializableMembers(Type type)

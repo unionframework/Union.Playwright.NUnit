@@ -33,6 +33,11 @@ public interface IUnionService : IPageResolver, INavigationService
     IBrowserGo Go { get; }
 
     /// <summary>
+    /// Gets the action helper for this service.
+    /// </summary>
+    IBrowserAction Action { get; }
+
+    /// <summary>
     /// Gets the existing page for this service, or creates a new one if none exists.
     /// Each service has its own page (tab) within the shared browser context.
     /// </summary>

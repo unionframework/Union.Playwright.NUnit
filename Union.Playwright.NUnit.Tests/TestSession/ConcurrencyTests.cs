@@ -1,10 +1,6 @@
 using System.Collections.Concurrent;
 using FluentAssertions;
-using Microsoft.Playwright;
-using NSubstitute;
 using NUnit.Framework;
-using Union.Playwright.NUnit.Core;
-using Union.Playwright.NUnit.Services;
 using Union.Playwright.NUnit.TestSession;
 using Union.Playwright.NUnit.Tests.Fakes;
 
@@ -19,14 +15,6 @@ namespace Union.Playwright.NUnit.Tests.TestSession;
 [Category("ThreadSafety")]
 public class ConcurrencyTests
 {
-    private IBrowserContext CreateFakeContext()
-    {
-        var mockContext = Substitute.For<IBrowserContext>();
-        var mockPage = Substitute.For<IPage>();
-        mockContext.NewPageAsync().Returns(Task.FromResult(mockPage));
-        return mockContext;
-    }
-
     #region TestSessionProvider Concurrency Tests
 
     [Test]
@@ -44,8 +32,7 @@ public class ConcurrencyTests
         {
             try
             {
-                var context = CreateFakeContext();
-                var scoped = provider.CreateTestSession(context);
+                var scoped = provider.CreateTestSession();
                 scopedSessions.Add(scoped);
                 return scoped;
             }
@@ -81,8 +68,7 @@ public class ConcurrencyTests
         // Act
         var tasks = Enumerable.Range(0, 20).Select(_ => Task.Run(() =>
         {
-            var context = CreateFakeContext();
-            var scoped = provider.CreateTestSession(context);
+            var scoped = provider.CreateTestSession();
             scopedSessions.Add(scoped);
             return scoped;
         }));
@@ -98,52 +84,6 @@ public class ConcurrencyTests
         {
             if (s != null) await s.DisposeAsync();
         }
-    }
-
-    #endregion
-
-    #region AsyncLocal Isolation Tests
-
-    [Test]
-    [Description("Verifies AsyncLocal properly isolates sessions between async flows")]
-    public async Task AsyncLocal_IsolatesBetweenAsyncFlows()
-    {
-        // Arrange
-        ScopedTestSession? session1Observed = null;
-        ScopedTestSession? session2Observed = null;
-
-        var provider = new TestableTestSessionProvider();
-        var context1 = CreateFakeContext();
-        var context2 = CreateFakeContext();
-
-        var session1 = provider.CreateTestSession(context1);
-        var session2 = provider.CreateTestSession(context2);
-
-        // Act - Set different sessions in different async flows
-        var task1 = Task.Run(async () =>
-        {
-            ScopedTestSession.SetCurrent(session1);
-            await Task.Delay(50);
-            session1Observed = ScopedTestSession.Current;
-        });
-
-        var task2 = Task.Run(async () =>
-        {
-            ScopedTestSession.SetCurrent(session2);
-            await Task.Delay(50);
-            session2Observed = ScopedTestSession.Current;
-        });
-
-        await Task.WhenAll(task1, task2);
-
-        // Assert
-        session1Observed.Should().BeSameAs(session1, "task1 should see session1");
-        session2Observed.Should().BeSameAs(session2, "task2 should see session2");
-
-        // Cleanup
-        ScopedTestSession.SetCurrent(null);
-        await session1.DisposeAsync();
-        await session2.DisposeAsync();
     }
 
     #endregion

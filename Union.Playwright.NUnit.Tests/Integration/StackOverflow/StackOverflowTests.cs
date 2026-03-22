@@ -68,7 +68,6 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         items.Should().HaveCount(3);
 
         var firstItem = items[0];
-        WebPageBuilder.InitComponent(page, firstItem);
 
         firstItem.Title.Should().NotBeNull();
         var isVisible = await firstItem.Title.IsVisibleAsync();
@@ -81,8 +80,6 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         var page = await Session.SO.Go.ToPage<QuestionsPage>();
         var firstItem = await page!.Questions.FindSingleAsync();
         firstItem.Should().NotBeNull();
-
-        WebPageBuilder.InitComponent(page, firstItem!);
 
         var tagNames = await firstItem!.Tags.GetTagNamesAsync();
         tagNames.Should().NotBeEmpty();
@@ -98,15 +95,10 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         var firstItem = await page!.Questions.FindSingleAsync();
         firstItem.Should().NotBeNull();
 
-        WebPageBuilder.InitComponent(page, firstItem!);
-
         firstItem!.Tags.Should().NotBeNull();
         firstItem.Tags.TagLink.Should().NotBeNull();
 
-        // Get the service's page for locator access
-        var playwrightPage = await Session.SO.GetOrCreatePageAsync();
-        var tagLinkLocator = playwrightPage.Locator(firstItem.Tags.TagLink.RootScss).First;
-        var isVisible = await tagLinkLocator.IsVisibleAsync();
+        var isVisible = await firstItem.Tags.TagLink.First.IsVisibleAsync();
         isVisible.Should().BeTrue();
     }
 }

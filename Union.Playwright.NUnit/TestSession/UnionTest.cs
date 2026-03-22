@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Playwright;
 using Microsoft.Playwright.NUnit;
 using NUnit.Framework;
+using Union.Playwright.NUnit.Components;
 using Union.Playwright.NUnit.Core;
 using Union.Playwright.NUnit.Services;
 
@@ -11,27 +12,24 @@ namespace Union.Playwright.NUnit.TestSession;
 
 /// <summary>
 /// Base class for all Union Playwright tests.
-/// Provides test isolation for parallel execution via AsyncLocal storage.
+/// Provides test isolation for parallel execution via per-instance session storage.
 /// Inherits from BrowserTest to get shared Browser instance.
 /// </summary>
 /// <typeparam name="TSession">The test session type containing services.</typeparam>
 public abstract class UnionTest<TSession> : BrowserTest
     where TSession : class, ITestSession
 {
-    #region Properties
-
     /// <summary>
-    /// Gets the test session for the current test.
-    /// Contains all services configured in the TestSessionProvider.
+    /// Per-instance session storage. Instance fields are used instead of AsyncLocal
+    /// because async methods run in isolated ExecutionContexts that revert modifications.
     /// </summary>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown if accessed before [SetUp] runs or after [TearDown] completes.
-    /// </exception>
+    private ScopedTestSession? _scopedSession;
+
     protected TSession Session
     {
         get
         {
-            var current = ScopedTestSession.Current;
+            var current = _scopedSession;
             if (current == null)
             {
                 throw new InvalidOperationException(
@@ -43,18 +41,11 @@ public abstract class UnionTest<TSession> : BrowserTest
         }
     }
 
-    /// <summary>
-    /// Gets the browser context for the current test.
-    /// All services in this test share this context (cookies, storage, auth).
-    /// </summary>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown if accessed before [SetUp] runs.
-    /// </exception>
     public IBrowserContext Context
     {
         get
         {
-            var current = ScopedTestSession.Current;
+            var current = _scopedSession;
             if (current == null)
             {
                 throw new InvalidOperationException(
@@ -65,86 +56,58 @@ public abstract class UnionTest<TSession> : BrowserTest
         }
     }
 
-    #endregion
-
-    #region Abstract Members
-
-    /// <summary>
-    /// Implement to provide the TestSessionProvider that configures services.
-    /// Typically returns a static singleton instance.
-    /// </summary>
     protected abstract TestSessionProvider<TSession> GetSessionProvider();
 
-    #endregion
-
-    #region Virtual Members
-
-    /// <summary>
-    /// Override to customize browser context options for tests in this class.
-    /// Called during [SetUp] when creating the context.
-    /// </summary>
-    /// <returns>Options for the browser context.</returns>
     public virtual BrowserNewContextOptions ContextOptions() => new();
 
-    #endregion
-
-    #region SetUp / TearDown
-
     /// <summary>
-    /// Creates an isolated browser context and test session for this test.
+    /// Creates an isolated test session and browser context for this test.
     /// Runs before each test method.
+    ///
+    /// Lifecycle order:
+    /// 1. DI scope created, session resolved (Session becomes available)
+    /// 2. ContextOptions() called (can access Session for configuration)
+    /// 3. Browser context created with the options
+    /// 4. Context attached to session (Context becomes available)
     /// </summary>
     [SetUp]
     public async Task UnionSetUp()
     {
-        // Create isolated browser context for this test
-        // This context is separate from any other parallel test's context
-        var context = await Browser.NewContextAsync(ContextOptions());
+        // Step 1: Create the test session with DI scope (no browser context yet)
+        var scopedSession = GetSessionProvider().CreateTestSession();
 
-        // Create the test session with DI scope
-        var scopedSession = GetSessionProvider().CreateTestSession(context);
+        // Step 2: Store as instance field - Session is now accessible via the property.
+        _scopedSession = scopedSession;
 
-        // Store in AsyncLocal - this test's async execution flow will see this value
-        // Other parallel tests have their own AsyncLocal value
-        ScopedTestSession.SetCurrent(scopedSession);
+        // Step 3: Call ContextOptions() - consumers can now access Session
+        var options = ContextOptions();
+
+        // Step 4: Create isolated browser context for this test
+        var context = await Browser.NewContextAsync(options);
+
+        // Step 5: Attach context to the scoped session
+        scopedSession.SetContext(context);
     }
 
-    /// <summary>
-    /// Disposes the test session and browser context.
-    /// Runs after each test method.
-    /// Always clears AsyncLocal even if disposal fails.
-    /// </summary>
     [TearDown]
     public async Task UnionTearDown()
     {
-        var session = ScopedTestSession.Current;
+        var session = _scopedSession;
         if (session != null)
         {
             try
             {
-                // Dispose session (closes context, disposes DI scope)
+                // Dispose session (disposes DI scope, closes context if set)
                 await session.DisposeAsync();
             }
             finally
             {
-                // Always clear AsyncLocal, even if disposal failed
-                ScopedTestSession.SetCurrent(null);
+                // Always clear, even if disposal failed
+                _scopedSession = null;
             }
         }
     }
 
-    #endregion
-
-    #region Helper Methods
-
-    /// <summary>
-    /// Gets a service of the specified type from the test session.
-    /// </summary>
-    /// <typeparam name="TService">The service type to retrieve.</typeparam>
-    /// <returns>The service instance.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown if the service is not found.
-    /// </exception>
     protected TService GetService<TService>() where TService : IUnionService
     {
         var service = Session.GetServices().OfType<TService>().FirstOrDefault();
@@ -157,5 +120,6 @@ public abstract class UnionTest<TSession> : BrowserTest
         return service;
     }
 
-    #endregion
+    public static ILocatorAssertions Expect(UnionElement element) =>
+        Assertions.Expect(element.RootLocator);
 }

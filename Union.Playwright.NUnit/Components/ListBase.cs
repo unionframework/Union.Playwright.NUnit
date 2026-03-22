@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Union.Playwright.NUnit.Pages;
 using Union.Playwright.NUnit.Pages.Interfaces;
 
 namespace Union.Playwright.NUnit.Components
 {
-    public abstract class ListBase<T> : ComponentBase where T : ItemBase
+    public abstract class ListBase<T> : ContainerBase where T : ItemBase
     {
         protected ListBase(IUnionPage parentPage, string rootScss = null)
             : base(parentPage, rootScss)
@@ -52,7 +53,9 @@ namespace Union.Playwright.NUnit.Components
 
         public T CreateItem(string id)
         {
-            return (T)Activator.CreateInstance(typeof(T), this, id);
+            var item = (T)Activator.CreateInstance(typeof(T), this, id);
+            WebPageBuilder.InitComponent(this.ParentPage, item);
+            return item;
         }
 
         public async Task<T> FindRandomAsync()

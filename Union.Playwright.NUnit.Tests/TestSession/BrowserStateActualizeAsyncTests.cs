@@ -13,6 +13,7 @@ namespace Union.Playwright.NUnit.Tests.TestSession;
 public class BrowserStateActualizeAsyncTests
 {
     private IPageResolver _pageResolver = null!;
+    private IUnionService _mockService = null!;
     private IPage _playwrightPage = null!;
     private BrowserState _browserState = null!;
 
@@ -24,6 +25,7 @@ public class BrowserStateActualizeAsyncTests
     public void SetUp()
     {
         _pageResolver = Substitute.For<IPageResolver>();
+        _mockService = Substitute.For<IUnionService>();
         _playwrightPage = Substitute.For<IPage>();
         _playwrightPage.Url.Returns(TestUrl);
 
@@ -31,7 +33,7 @@ public class BrowserStateActualizeAsyncTests
         var baseUrlPattern = new BaseUrlPattern(new BaseUrlRegexBuilder(BaseUrl).Build());
         _pageResolver.BaseUrlPattern.Returns(baseUrlPattern);
 
-        _browserState = new BrowserState(_pageResolver);
+        _browserState = new BrowserState(_pageResolver, _mockService);
     }
 
     [Test]
@@ -84,7 +86,7 @@ public class BrowserStateActualizeAsyncTests
         await _browserState.ActualizeAsync(_playwrightPage);
 
         // Assert
-        mockPage.Received(1).Activate(_playwrightPage);
+        mockPage.Received(1).Activate(_playwrightPage, _mockService);
     }
 
     [Test]

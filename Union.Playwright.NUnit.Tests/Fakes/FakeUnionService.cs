@@ -6,17 +6,17 @@ using Union.Playwright.NUnit.Core;
 using Union.Playwright.NUnit.Pages.Interfaces;
 using Union.Playwright.NUnit.Routing;
 using Union.Playwright.NUnit.Services;
-using Union.Playwright.NUnit.TestSession;
 
 namespace Union.Playwright.NUnit.Tests.Fakes;
 
 /// <summary>
 /// A fake IUnionService implementation for testing.
 /// </summary>
-public class FakeUnionService : IUnionService
+public class FakeUnionService : IUnionService, IBrowserContextAware
 {
     private readonly string _baseUrl;
     private IPage? _page;
+    private IBrowserContext? _browserContext;
 
     public FakeUnionService(string baseUrl = "https://test.example.com")
     {
@@ -33,18 +33,28 @@ public class FakeUnionService : IUnionService
 
     public IBrowserGo Go { get; }
 
+    public IBrowserAction Action { get; } = Substitute.For<IBrowserAction>();
+
+    /// <summary>
+    /// Sets the browser context for this service.
+    /// Called by ScopedTestSession.SetContext() during test setup.
+    /// </summary>
+    void IBrowserContextAware.SetBrowserContext(IBrowserContext context)
+    {
+        _browserContext = context;
+    }
+
     /// <summary>
     /// Gets or creates a page for this service.
-    /// For tests, returns a mock page or uses the ScopedTestSession if available.
+    /// Uses injected browser context, or falls back to a mock for unit tests.
     /// </summary>
     public async Task<IPage> GetOrCreatePageAsync()
     {
         if (_page == null)
         {
-            var currentSession = ScopedTestSession.Current;
-            if (currentSession != null)
+            if (_browserContext != null)
             {
-                _page = await currentSession.Context.NewPageAsync();
+                _page = await _browserContext.NewPageAsync();
             }
             else
             {

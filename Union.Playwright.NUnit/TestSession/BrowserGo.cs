@@ -20,27 +20,12 @@ public class BrowserGo : IBrowserGo
     private readonly IBrowserState _state;
     private readonly TestSettings _settings;
 
-    /// <summary>
-    /// Initializes a new BrowserGo instance.
-    /// </summary>
-    /// <param name="service">The service that owns this navigation helper.</param>
-    /// <param name="state">The browser state tracker.</param>
-    /// <param name="settings">Optional test settings.</param>
     public BrowserGo(IUnionService service, IBrowserState state, TestSettings? settings = null)
     {
         _service = service ?? throw new ArgumentNullException(nameof(service));
         _navigationService = service;
         _state = state ?? throw new ArgumentNullException(nameof(state));
         _settings = settings ?? TestSettings.Default;
-    }
-
-    /// <summary>
-    /// Gets the page for the owning service.
-    /// Delegates to the service's lazy page creation.
-    /// </summary>
-    private async Task<IPage> GetPageAsync()
-    {
-        return await _service.GetOrCreatePageAsync();
     }
 
     /// <summary>
@@ -84,7 +69,7 @@ public class BrowserGo : IBrowserGo
     /// </summary>
     public async Task ToUrl(RequestData requestData)
     {
-        var page = await GetPageAsync();
+        var page = await _service.GetOrCreatePageAsync();
         await page.GotoAsync(requestData.Url.ToString());
         await AfterNavigateAsync(page);
     }
@@ -94,7 +79,7 @@ public class BrowserGo : IBrowserGo
     /// </summary>
     public async Task Refresh()
     {
-        var page = await GetPageAsync();
+        var page = await _service.GetOrCreatePageAsync();
         await page.ReloadAsync();
         await AfterNavigateAsync(page);
     }
@@ -104,17 +89,13 @@ public class BrowserGo : IBrowserGo
     /// </summary>
     public async Task Back()
     {
-        var page = await GetPageAsync();
+        var page = await _service.GetOrCreatePageAsync();
         await page.GoBackAsync();
         await AfterNavigateAsync(page);
     }
 
-    /// <summary>
-    /// Handles post-navigation tasks like waiting for page to load and actualizing state.
-    /// </summary>
     private async Task AfterNavigateAsync(IPage page)
     {
-        // Initial actualization attempt with error context
         try
         {
             await _state.ActualizeAsync(page);
@@ -125,7 +106,6 @@ public class BrowserGo : IBrowserGo
                 $"Failed to actualize page state after navigation to '{page.Url}'", ex);
         }
 
-        // Retry loop if page not resolved and timeout configured
         if (!_state.PageIs<IUnionPage>() && _settings.NavigationResolveTimeoutMs > 0)
         {
             var sw = Stopwatch.StartNew();
@@ -143,11 +123,9 @@ public class BrowserGo : IBrowserGo
                 }
                 catch
                 {
-                    // Swallow exceptions during retry - we'll try again
                 }
             }
 
-            // Update diagnostic message if we timed out
             if (!_state.PageIs<IUnionPage>())
             {
                 _state.AppendDiagnosticMessage(
@@ -155,16 +133,14 @@ public class BrowserGo : IBrowserGo
             }
         }
 
-        // Call WaitLoadedAsync with timeout protection
-        if (this._state.PageIs<IUnionPage>())
+        if (_state.PageIs<IUnionPage>())
         {
-            var resolvedPage = this._state.PageAs<IUnionPage>()!;
+            var resolvedPage = _state.PageAs<IUnionPage>()!;
 
-            var waitLoadedTimeoutMs = this._settings.WaitLoadedTimeoutMs;
+            var waitLoadedTimeoutMs = _settings.WaitLoadedTimeoutMs;
 
             if (waitLoadedTimeoutMs > 0)
             {
-                // Apply timeout protection
                 var waitTask = resolvedPage.WaitLoadedAsync();
                 var timeoutTask = Task.Delay(waitLoadedTimeoutMs);
 
@@ -172,18 +148,15 @@ public class BrowserGo : IBrowserGo
 
                 if (completedTask == timeoutTask)
                 {
-                    // Timeout occurred
                     throw new TimeoutException(
                         $"Page '{resolvedPage.GetType().Name}' WaitLoadedAsync " +
                         $"timed out after {waitLoadedTimeoutMs}ms");
                 }
 
-                // WaitLoadedAsync completed - propagate any exception
                 await waitTask;
             }
             else
             {
-                // No timeout configured - await directly
                 await resolvedPage.WaitLoadedAsync();
             }
         }

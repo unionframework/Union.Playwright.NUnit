@@ -1,38 +1,40 @@
+using System;
 using Microsoft.Playwright;
 using System.Threading.Tasks;
+using Union.Playwright.NUnit.Core;
 using Union.Playwright.NUnit.Pages.Interfaces;
-using Union.Playwright.NUnit.SCSS;
+using Union.Playwright.NUnit.Services;
 
 namespace Union.Playwright.NUnit.Components
 {
-    public abstract class ComponentBase : IContainer
+    public abstract class ComponentBase : IComponent
     {
-        private string _rootScss;
+        private readonly string _rootScss;
 
         public IUnionPage ParentPage { get; }
 
         public string ComponentName { get; set; }
 
-        public string FrameScss { get; set; }
+        public string FrameXcss { get; set; }
 
         protected ComponentBase(IUnionPage parentPage, string rootScss = null)
         {
-            this.ParentPage = parentPage;
-            _rootScss = rootScss;
+            this.ParentPage = parentPage ?? throw new ArgumentNullException(nameof(parentPage));
+            this._rootScss = rootScss;
         }
 
-        public virtual string RootScss => _rootScss ?? "html";
+        public virtual string RootScss => this._rootScss ?? "html";
 
         protected IPage PlaywrightPage => this.ParentPage.PlaywrightPage;
 
-        protected ILocator Root => this.PlaywrightPage.Locator(this.RootScss);
+        public ILocator RootLocator => this.PlaywrightPage.Locator(this.RootScss);
 
-        public async Task<bool> IsVisibleAsync() => await this.Root.IsVisibleAsync();
+        protected IBrowserGo Go => this.ParentPage.Service.Go;
 
-        public string InnerScss(string relativeScss, params object[] args)
-        {
-            var formatted = string.Format(relativeScss, args);
-            return ScssBuilder.Concat(this.RootScss, formatted).Value;
-        }
+        protected IBrowserState State => this.ParentPage.Service.State;
+
+        protected IBrowserAction Action => this.ParentPage.Service.Action;
+
+        public Task<bool> IsVisibleAsync() => this.RootLocator.IsVisibleAsync();
     }
 }

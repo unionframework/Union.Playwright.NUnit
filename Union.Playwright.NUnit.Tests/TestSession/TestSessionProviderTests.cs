@@ -12,51 +12,44 @@ namespace Union.Playwright.NUnit.Tests.TestSession;
 public class TestSessionProviderTests
 {
     private TestableTestSessionProvider _provider = null!;
-    private IBrowserContext _fakeContext = null!;
 
     [SetUp]
     public void SetUp()
     {
-        _fakeContext = Substitute.For<IBrowserContext>();
-        var fakePage = Substitute.For<IPage>();
-        _fakeContext.NewPageAsync().Returns(Task.FromResult(fakePage));
         _provider = new TestableTestSessionProvider();
     }
 
-    #region CreateTestSession Tests
+    #region CreateTestSession (no-arg) Tests
 
     [Test]
-    public async Task CreateTestSession_ReturnsNonNullScopedSession()
+    public void CreateTestSession_NoArg_ReturnsNonNullScopedSession()
     {
         // Act
-        await using var scoped = _provider.CreateTestSession(_fakeContext);
+        var scoped = _provider.CreateTestSession();
 
         // Assert
         scoped.Should().NotBeNull();
         scoped.Session.Should().NotBeNull();
         scoped.Session.Should().BeOfType<FakeTestSession>();
+        scoped.HasContext.Should().BeFalse();
     }
 
     [Test]
-    public async Task CreateTestSession_CalledTwice_ReturnsDifferentSessions()
+    public void CreateTestSession_NoArg_CalledTwice_ReturnsDifferentSessions()
     {
-        // Arrange
-        var context1 = Substitute.For<IBrowserContext>();
-        var context2 = Substitute.For<IBrowserContext>();
-
         // Act
-        await using var scoped1 = _provider.CreateTestSession(context1);
-        await using var scoped2 = _provider.CreateTestSession(context2);
+        var scoped1 = _provider.CreateTestSession();
+        var scoped2 = _provider.CreateTestSession();
 
         // Assert
         scoped1.Session.Should().NotBeSameAs(scoped2.Session);
     }
 
     [Test]
-    public async Task CreateTestSession_SessionContainsRegisteredServices()
+    public void CreateTestSession_NoArg_SessionContainsRegisteredServices()
     {
         // Act
-        await using var scoped = _provider.CreateTestSession(_fakeContext);
+        var scoped = _provider.CreateTestSession();
         var services = scoped.Session.GetServices();
 
         // Assert
@@ -64,10 +57,27 @@ public class TestSessionProviderTests
     }
 
     [Test]
-    public async Task CreateTestSession_DisposingScope_DoesNotThrow()
+    public async Task CreateTestSession_NoArg_ThenSetContext_ContextAccessible()
+    {
+        // Arrange
+        var mockContext = Substitute.For<IBrowserContext>();
+
+        // Act
+        var scoped = _provider.CreateTestSession();
+        scoped.SetContext(mockContext);
+
+        // Assert
+        scoped.Context.Should().BeSameAs(mockContext);
+
+        // Cleanup
+        await scoped.DisposeAsync();
+    }
+
+    [Test]
+    public async Task CreateTestSession_NoArg_DisposingWithoutContext_DoesNotThrow()
     {
         // Act
-        var scoped = _provider.CreateTestSession(_fakeContext);
+        var scoped = _provider.CreateTestSession();
 
         // Assert
         var act = async () => await scoped.DisposeAsync();
@@ -75,30 +85,11 @@ public class TestSessionProviderTests
     }
 
     [Test]
-    public async Task CreateTestSession_StoresContext()
+    public async Task CreateTestSession_NoArg_MultipleCalls_EachGetsIsolatedSession()
     {
-        // Act
-        await using var scoped = _provider.CreateTestSession(_fakeContext);
-
-        // Assert
-        scoped.Context.Should().BeSameAs(_fakeContext);
-    }
-
-    #endregion
-
-    #region Session Lifecycle Tests
-
-    [Test]
-    public async Task CreateTestSession_MultipleCalls_EachGetsIsolatedSession()
-    {
-        // Arrange
-        var contexts = Enumerable.Range(0, 5)
-            .Select(_ => Substitute.For<IBrowserContext>())
-            .ToList();
-
-        // Act
-        var sessions = contexts
-            .Select(ctx => _provider.CreateTestSession(ctx))
+        // Arrange & Act
+        var sessions = Enumerable.Range(0, 5)
+            .Select(_ => _provider.CreateTestSession())
             .ToList();
 
         try

@@ -7,7 +7,7 @@ namespace Union.Playwright.NUnit.Core
 {
     public interface IBrowserState
     {
-        IModalWindow? ModalWindow { get; }
+        IUnionModal? ModalWindow { get; }
         IUnionPage? Page { get; }
 
         /// <summary>
