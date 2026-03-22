@@ -68,7 +68,6 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         items.Should().HaveCount(3);
 
         var firstItem = items[0];
-        WebPageBuilder.InitComponent(page, firstItem);
 
         firstItem.Title.Should().NotBeNull();
         var isVisible = await firstItem.Title.IsVisibleAsync();
@@ -81,8 +80,6 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         var page = await Session.SO.Go.ToPage<QuestionsPage>();
         var firstItem = await page!.Questions.FindSingleAsync();
         firstItem.Should().NotBeNull();
-
-        WebPageBuilder.InitComponent(page, firstItem!);
 
         var tagNames = await firstItem!.Tags.GetTagNamesAsync();
         tagNames.Should().NotBeEmpty();
@@ -97,8 +94,6 @@ public class StackOverflowTests : UnionTest<StackOverflowTestSession>
         var page = await Session.SO.Go.ToPage<QuestionsPage>();
         var firstItem = await page!.Questions.FindSingleAsync();
         firstItem.Should().NotBeNull();
-
-        WebPageBuilder.InitComponent(page, firstItem!);
 
         firstItem!.Tags.Should().NotBeNull();
         firstItem.Tags.TagLink.Should().NotBeNull();
