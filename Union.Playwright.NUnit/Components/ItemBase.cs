@@ -2,8 +2,6 @@ namespace Union.Playwright.NUnit.Components
 {
     public abstract class ItemBase : ContainerBase
     {
-        private string _itemRootScss;
-
         protected IContainer Container { get; }
 
         public string Id { get; }
@@ -15,19 +13,8 @@ namespace Union.Playwright.NUnit.Components
             this.Id = id;
         }
 
-        public abstract string ItemScss { get; }
+        public abstract string ItemXcss { get; }
 
-        public override string RootScss
-        {
-            get
-            {
-                if (_itemRootScss == null)
-                {
-                    _itemRootScss = this.ItemScss;
-                }
-
-                return _itemRootScss;
-            }
-        }
+        public override string RootXcss => this.ItemXcss;
     }
 }

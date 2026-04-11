@@ -14,7 +14,7 @@ namespace Union.Playwright.NUnit.Tests.Components
         {
         }
 
-        public override string ItemScss => $".item[data-id='{this.Id}']";
+        public override string ItemXcss => $".item[data-id='{this.Id}']";
     }
 
     [TestFixture]
@@ -51,22 +51,11 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void RootScss_ReturnsItemScss()
+        public void RootXcss_ReturnsItemXcss()
         {
             var item = new TestItem(_mockContainer, "abc-123");
 
-            item.RootScss.Should().Be(".item[data-id='abc-123']");
-        }
-
-        [Test]
-        public void RootScss_IsLazyCached()
-        {
-            var item = new TestItem(_mockContainer, "abc-123");
-
-            var first = item.RootScss;
-            var second = item.RootScss;
-
-            first.Should().BeSameAs(second);
+            item.RootXcss.Should().Be(".item[data-id='abc-123']");
         }
     }
 }

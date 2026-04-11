@@ -1,11 +1,12 @@
 using Union.Playwright.NUnit.Pages.Interfaces;
+using XcssSelectors;
 
 namespace Union.Playwright.NUnit.Components
 {
     public interface IContainer : IComponent
     {
-        string RootScss { get; }
+        string RootXcss { get; }
 
-        string InnerScss(string relativeScss, params object[] args);
+        Xcss InnerXcss(string relativeXcss, params object[] args);
     }
 }

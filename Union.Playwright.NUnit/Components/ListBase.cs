@@ -9,18 +9,18 @@ namespace Union.Playwright.NUnit.Components
 {
     public abstract class ListBase<T> : ContainerBase where T : ItemBase
     {
-        protected ListBase(IUnionPage parentPage, string rootScss = null)
-            : base(parentPage, rootScss)
+        protected ListBase(IUnionPage parentPage, string rootXcss = null)
+            : base(parentPage, rootXcss)
         {
         }
 
-        public abstract string ItemIdScss { get; }
+        public abstract string ItemIdXcss { get; }
 
         public virtual string IdAttribute => null;
 
         public async Task<List<string>> GetIdsAsync()
         {
-            var locator = this.PlaywrightPage.Locator(this.InnerScss(this.ItemIdScss));
+            var locator = this.PlaywrightPage.Locator("xpath=" + this.InnerXcss(this.ItemIdXcss).XPath);
             var count = await locator.CountAsync();
             var ids = new List<string>();
             for (var i = 0; i < count; i++)

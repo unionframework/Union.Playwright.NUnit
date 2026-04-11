@@ -47,11 +47,11 @@ namespace Union.Playwright.NUnit.Tests.Pages
             }
         }
 
-        // Legacy: TestContainer : ContainerBase(IPage, string rootScss)
+        // Legacy: TestContainer : ContainerBase(IPage, string rootXcss)
         private class TestContainer : ContainerBase
         {
-            public TestContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public TestContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -64,7 +64,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             {
             }
 
-            public override string ItemScss => Container.InnerScss($"//li[@id='{Id}']");
+            public override string ItemXcss => "xpath=" + Container.InnerXcss($"//li[@id='{Id}']").XPath;
         }
 
         // Legacy: TestAlert : AlertBase(IPage) → New: TestModal : ComponentBase, IUnionModal
@@ -122,8 +122,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:span.leaf")]
             public TestComponent Leaf;
 
-            public Level3Container(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public Level3Container(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -133,8 +133,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:div.l3")]
             public Level3Container Level3;
 
-            public Level2Container(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public Level2Container(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -144,8 +144,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:div.l2")]
             public Level2Container Level2;
 
-            public Level1Container(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public Level1Container(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -199,8 +199,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:div[@class='child']")]
             public TestComponent RootPrefixed;
 
-            public RootPrefixSelectorContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public RootPrefixSelectorContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -211,8 +211,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("//span[@id='absolute']")]
             public TestComponent NonPrefixed;
 
-            public NonPrefixedSelectorContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public NonPrefixedSelectorContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -235,8 +235,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:div", "//span")]
             public TwoArgComponent Child;
 
-            public MultiArgContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public MultiArgContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -251,8 +251,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:span.leaf")]
             public TestComponent Leaf;
 
-            public InnerContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public InnerContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -262,8 +262,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("root:div.inner")]
             public InnerContainer Inner;
 
-            public OuterContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public OuterContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -281,8 +281,8 @@ namespace Union.Playwright.NUnit.Tests.Pages
             [UnionInit("//div[text()='mytext']")]
             public TestComponent Component2;
 
-            public LegacySelectorContainer(IUnionPage parent, string rootScss = null)
-                : base(parent, rootScss)
+            public LegacySelectorContainer(IUnionPage parent, string rootXcss = null)
+                : base(parent, rootXcss)
             {
             }
         }
@@ -403,7 +403,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             WebPageBuilder.InitComponent(_page, container);
 
             container.RootPrefixed.Xpath.Should().Be(
-                "//*[@id='root']/descendant::div[@class='child']");
+                "xpath=//*[@id='root']/descendant::div[@class='child']");
         }
 
         [Test]
@@ -440,7 +440,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             WebPageBuilder.InitComponent(_page, container);
 
             container.Child.Should().NotBeNull();
-            container.Child.Arg1.Should().Be("//*[@id='root']/descendant::div");
+            container.Child.Arg1.Should().Be("xpath=//*[@id='root']/descendant::div");
             container.Child.Arg2.Should().Be("//span");
         }
 
@@ -456,7 +456,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             outer.Inner.Leaf.Should().NotBeNull();
 
             var expectedInnerLeaf =
-                "//*[@id='outer']/descendant::div[contains(@class,'inner')]/descendant::span[contains(@class,'leaf')]";
+                "xpath=//*[@id='outer']/descendant::div[contains(@class,'inner')]/descendant::span[contains(@class,'leaf')]";
             outer.Inner.Leaf.Xpath.Should().Be(expectedInnerLeaf);
         }
 
@@ -577,7 +577,7 @@ namespace Union.Playwright.NUnit.Tests.Pages
             WebPageBuilder.InitComponent(_page, container);
 
             container.Component1.Xpath.Should().Be(
-                "//*[@id='rootelementid']/descendant::div[text()='mytext']");
+                "xpath=//*[@id='rootelementid']/descendant::div[text()='mytext']");
         }
     }
 }

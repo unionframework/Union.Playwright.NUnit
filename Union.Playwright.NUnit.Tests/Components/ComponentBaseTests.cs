@@ -13,8 +13,8 @@ namespace Union.Playwright.NUnit.Tests.Components
 {
     public class TestComponent : ComponentBase
     {
-        public TestComponent(IUnionPage parentPage, string rootScss = null)
-            : base(parentPage, rootScss)
+        public TestComponent(IUnionPage parentPage, string rootXcss = null)
+            : base(parentPage, rootXcss)
         {
         }
     }
@@ -57,19 +57,19 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void RootScss_WhenNoScssProvided_DefaultsToHtml()
+        public void RootXcss_WhenNoXcssProvided_DefaultsToHtml()
         {
             var component = new TestComponent(_mockPage);
 
-            component.RootScss.Should().Be("html");
+            component.RootXcss.Should().Be("html");
         }
 
         [Test]
-        public void RootScss_WhenScssProvided_ReturnsIt()
+        public void RootXcss_WhenXcssProvided_ReturnsIt()
         {
             var component = new TestComponent(_mockPage, ".my-component");
 
-            component.RootScss.Should().Be(".my-component");
+            component.RootXcss.Should().Be(".my-component");
         }
 
         [Test]
@@ -95,7 +95,7 @@ namespace Union.Playwright.NUnit.Tests.Components
         {
             var mockLocator = Substitute.For<ILocator>();
             mockLocator.IsVisibleAsync(Arg.Any<LocatorIsVisibleOptions>()).Returns(true);
-            _mockPlaywrightPage.Locator("html", Arg.Any<PageLocatorOptions>()).Returns(mockLocator);
+            _mockPlaywrightPage.Locator(Arg.Any<string>(), Arg.Any<PageLocatorOptions>()).Returns(mockLocator);
 
             var component = new TestComponent(_mockPage);
             var result = await component.IsVisibleAsync();
