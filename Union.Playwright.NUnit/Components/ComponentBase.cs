@@ -40,5 +40,8 @@ namespace Union.Playwright.NUnit.Components
         protected IBrowserAction Action => this.ParentPage.Service.Action;
 
         public Task<bool> IsVisibleAsync() => this.RootLocator.IsVisibleAsync();
+
+        protected static ILocatorAssertions Expect(UnionElement element) =>
+            Assertions.Expect(element.RootLocator);
     }
 }
