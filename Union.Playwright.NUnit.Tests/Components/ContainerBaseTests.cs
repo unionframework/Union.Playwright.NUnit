@@ -9,10 +9,8 @@ namespace Union.Playwright.NUnit.Tests.Components
 {
     public class TestContainer : ContainerBase
     {
-        public TestContainer(IUnionPage parentPage, string rootScss = null)
-            : base(parentPage, rootScss)
-        {
-        }
+        public TestContainer(IUnionPage parentPage, string rootXcss = null)
+            : base(parentPage, rootXcss) { }
     }
 
     [TestFixture]
@@ -30,23 +28,23 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void InnerScss_ConcatenatesRootAndRelative()
+        public void InnerXcss_ConcatenatesRootAndRelative()
         {
             var container = new TestContainer(_mockPage, "div.container");
 
-            var result = container.InnerScss("span.child");
+            var result = container.InnerXcss("span.child");
 
-            result.Should().NotBeNullOrEmpty();
+            result.XPath.Should().NotBeNullOrEmpty();
         }
 
         [Test]
-        public void InnerScss_FormatsArgsIntoRelativeScss()
+        public void InnerXcss_FormatsArgsIntoRelativeXcss()
         {
             var container = new TestContainer(_mockPage, "div.container");
 
-            var result = container.InnerScss("span[data-id='{0}']", "test-id");
+            var result = container.InnerXcss("span[data-id='{0}']", "test-id");
 
-            result.Should().Contain("test-id");
+            result.XPath.Should().Contain("test-id");
         }
     }
 }

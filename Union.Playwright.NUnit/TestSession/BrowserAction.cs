@@ -72,7 +72,7 @@ public class BrowserAction : IBrowserAction
         {
             try
             {
-                await page.Locator(component.RootScss)
+                await component.RootLocator
                     .WaitForAsync(new LocatorWaitForOptions
                     {
                         State = WaitForSelectorState.Visible
@@ -90,7 +90,7 @@ public class BrowserAction : IBrowserAction
 
     /// <summary>
     /// Clicks the locator, finds a pre-registered component of type TComponent
-    /// on the current page, waits for its RootScss selector to become visible, and returns it.
+    /// on the current page, waits for its RootXcss selector to become visible, and returns it.
     /// Throws if no page is resolved or the component type is not registered.
     /// </summary>
     public async Task<TComponent> ClickAndWaitForAsync<TComponent>(ILocator locator)
@@ -114,7 +114,7 @@ public class BrowserAction : IBrowserAction
 
         try
         {
-            await page.Locator(component.RootScss)
+            await component.RootLocator
                 .WaitForAsync(new LocatorWaitForOptions
                 {
                     State = WaitForSelectorState.Visible
@@ -124,7 +124,7 @@ public class BrowserAction : IBrowserAction
         {
             throw new TimeoutException(
                 $"Component {typeof(TComponent).Name} " +
-                $"(RootScss: '{component.RootScss}') " +
+                $"(RootXcss: '{component.RootXcss}') " +
                 $"did not become visible after clicking.");
         }
 

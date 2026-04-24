@@ -81,7 +81,8 @@ namespace Union.Playwright.NUnit.Pages
         {
             if (argument is string str && str.StartsWith("root:"))
             {
-                return container.InnerScss(str.Replace("root:", string.Empty));
+                var xcss = container.InnerXcss(str.Replace("root:", string.Empty));
+                return "xpath=" + xcss.XPath;
             }
             return argument;
         }

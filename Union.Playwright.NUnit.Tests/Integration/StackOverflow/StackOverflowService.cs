@@ -11,4 +11,23 @@ public class StackOverflowService : UnionService<StackOverflowPage>
     }
 
     public override string BaseUrl => "https://stackoverflow.com";
+
+    public async Task MockQuestionsAsync(string htmlContent)
+    {
+        var page = await this.GetOrCreatePageAsync();
+        await page.RouteAsync("**/questions", async route =>
+        {
+            await route.FulfillAsync(new()
+            {
+                ContentType = "text/html",
+                Body = htmlContent
+            });
+        });
+    }
+
+    public async Task UnmockQuestionsAsync()
+    {
+        var page = await this.GetOrCreatePageAsync();
+        await page.UnrouteAsync("**/questions");
+    }
 }

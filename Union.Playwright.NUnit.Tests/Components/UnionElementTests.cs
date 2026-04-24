@@ -31,7 +31,7 @@ namespace Union.Playwright.NUnit.Tests.Components
             _mockPage.PlaywrightPage.Returns(_mockPlaywrightPage);
             _mockPage.Service.Returns(_mockService);
             _mockService.Action.Returns(_mockAction);
-            _mockPlaywrightPage.Locator(".element", Arg.Any<PageLocatorOptions>()).Returns(_mockLocator);
+            _mockPlaywrightPage.Locator(Arg.Any<string>(), Arg.Any<PageLocatorOptions>()).Returns(_mockLocator);
         }
 
         private UnionElement CreateElement() => new UnionElement(_mockPage, ".element");
@@ -53,11 +53,11 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void RootScss_ReturnsProvidedSelector()
+        public void RootXcss_ReturnsProvidedSelector()
         {
             var element = CreateElement();
 
-            element.RootScss.Should().Be(".element");
+            element.RootXcss.Should().Be(".element");
         }
 
         [Test]
@@ -266,30 +266,30 @@ namespace Union.Playwright.NUnit.Tests.Components
         }
 
         [Test]
-        public void Constructor_WhenRootScssIsNull_ThrowsArgumentException()
+        public void Constructor_WhenRootXcssIsNull_ThrowsArgumentException()
         {
             var act = () => new UnionElement(_mockPage, null);
 
             act.Should().Throw<ArgumentException>()
-                .WithParameterName("rootScss");
+                .WithParameterName("rootXcss");
         }
 
         [Test]
-        public void Constructor_WhenRootScssIsEmpty_ThrowsArgumentException()
+        public void Constructor_WhenRootXcssIsEmpty_ThrowsArgumentException()
         {
             var act = () => new UnionElement(_mockPage, "");
 
             act.Should().Throw<ArgumentException>()
-                .WithParameterName("rootScss");
+                .WithParameterName("rootXcss");
         }
 
         [Test]
-        public void Constructor_WhenRootScssIsWhitespace_ThrowsArgumentException()
+        public void Constructor_WhenRootXcssIsWhitespace_ThrowsArgumentException()
         {
             var act = () => new UnionElement(_mockPage, "   ");
 
             act.Should().Throw<ArgumentException>()
-                .WithParameterName("rootScss");
+                .WithParameterName("rootXcss");
         }
     }
 }

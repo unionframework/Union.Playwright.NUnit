@@ -10,11 +10,11 @@ namespace Union.Playwright.NUnit.Components
 {
     public class UnionElement : ComponentBase, ILocator
     {
-        public UnionElement(IUnionPage parentPage, string rootScss)
-            : base(parentPage, rootScss)
+        public UnionElement(IUnionPage parentPage, string rootXcss)
+            : base(parentPage, rootXcss)
         {
-            if (string.IsNullOrWhiteSpace(rootScss))
-                throw new ArgumentException("Selector must not be null or empty.", nameof(rootScss));
+            if (string.IsNullOrWhiteSpace(rootXcss))
+                throw new ArgumentException("Selector must not be null or empty.", nameof(rootXcss));
         }
 
         // Click-and-wait convenience methods

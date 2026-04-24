@@ -16,25 +16,25 @@ namespace Union.Playwright.NUnit.Tests.Components
         {
         }
 
-        public override string ItemScss => $".row[data-id='{this.Id}']";
+        public override string ItemXcss => $".row[data-id='{this.Id}']";
     }
 
     public class TestList : ListBase<TestListItem>
     {
-        public TestList(IUnionPage parentPage, string rootScss = null)
-            : base(parentPage, rootScss)
+        public TestList(IUnionPage parentPage, string rootXcss = null)
+            : base(parentPage, rootXcss)
         {
         }
 
-        public override string ItemIdScss => ".row";
+        public override string ItemIdXcss => ".row";
 
         public override string IdAttribute => "data-id";
     }
 
     public class InnerComponent : ComponentBase
     {
-        public InnerComponent(IUnionPage parentPage, string rootScss)
-            : base(parentPage, rootScss)
+        public InnerComponent(IUnionPage parentPage, string rootXcss)
+            : base(parentPage, rootXcss)
         {
         }
     }
@@ -46,7 +46,7 @@ namespace Union.Playwright.NUnit.Tests.Components
         {
         }
 
-        public override string ItemScss => $".row[data-id='{this.Id}']";
+        public override string ItemXcss => $".row[data-id='{this.Id}']";
 
         [UnionInit("root:.inner")]
         public InnerComponent Inner;
@@ -54,24 +54,24 @@ namespace Union.Playwright.NUnit.Tests.Components
 
     public class TestListWithInit : ListBase<TestListItemWithInit>
     {
-        public TestListWithInit(IUnionPage parentPage, string rootScss = null)
-            : base(parentPage, rootScss)
+        public TestListWithInit(IUnionPage parentPage, string rootXcss = null)
+            : base(parentPage, rootXcss)
         {
         }
 
-        public override string ItemIdScss => ".row";
+        public override string ItemIdXcss => ".row";
 
         public override string IdAttribute => "data-id";
     }
 
     public class TestListTextContent : ListBase<TestListItem>
     {
-        public TestListTextContent(IUnionPage parentPage, string rootScss = null)
-            : base(parentPage, rootScss)
+        public TestListTextContent(IUnionPage parentPage, string rootXcss = null)
+            : base(parentPage, rootXcss)
         {
         }
 
-        public override string ItemIdScss => ".row";
+        public override string ItemIdXcss => ".row";
     }
 
     [TestFixture]
@@ -268,8 +268,9 @@ namespace Union.Playwright.NUnit.Tests.Components
 
             var item = list.CreateItem("item-1");
 
-            item.Inner.RootScss.Should().Contain(".inner");
-            item.Inner.RootScss.Should().Contain(item.RootScss);
+            item.Inner.RootXcss.Should().StartWith("xpath=");
+            item.Inner.RootXcss.Should().Contain("inner");
+            item.Inner.RootXcss.Should().Contain("item-1");
         }
 
         [Test]
