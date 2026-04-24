@@ -41,7 +41,7 @@ namespace Union.Playwright.NUnit.Components
 
         public Task<bool> IsVisibleAsync() => this.RootLocator.IsVisibleAsync();
 
-        protected static ILocatorAssertions Expect(UnionElement element) =>
+        protected static ILocatorAssertions Expect(ComponentBase element) =>
             Assertions.Expect(element.RootLocator);
     }
 }
