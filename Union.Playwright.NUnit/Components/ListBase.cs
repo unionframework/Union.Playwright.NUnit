@@ -7,12 +7,11 @@ using Union.Playwright.NUnit.Pages.Interfaces;
 
 namespace Union.Playwright.NUnit.Components
 {
-    public abstract class ListBase<T> : ContainerBase where T : ItemBase
+    public abstract class ListBase<T> : ContainerBase
+        where T : ItemBase
     {
         protected ListBase(IUnionPage parentPage, string rootXcss = null)
-            : base(parentPage, rootXcss)
-        {
-        }
+            : base(parentPage, rootXcss) { }
 
         public abstract string ItemIdXcss { get; }
 
@@ -20,7 +19,12 @@ namespace Union.Playwright.NUnit.Components
 
         public async Task<List<string>> GetIdsAsync()
         {
-            var locator = this.PlaywrightPage.Locator("xpath=" + this.InnerXcss(this.ItemIdXcss).XPath);
+            // ItemIdXcss is an absolute selector, resolved exactly like ComponentBase.RootLocator —
+            // no concatenation with the list root. A list that needs its rows scoped under its own
+            // root builds that scope into ItemIdXcss itself via "xpath=" + InnerXcss(...).XPath,
+            // mirroring how ItemBase.ItemXcss is authored. This keeps ItemIdXcss and ItemXcss
+            // consistent and avoids the double-scoping trap that silent concat introduced.
+            var locator = this.GetLocatorFor(this.ItemIdXcss);
             var count = await locator.CountAsync();
             var ids = new List<string>();
             for (var i = 0; i < count; i++)
