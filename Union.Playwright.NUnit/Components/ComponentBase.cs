@@ -1,6 +1,6 @@
 using System;
-using Microsoft.Playwright;
 using System.Threading.Tasks;
+using Microsoft.Playwright;
 using Union.Playwright.NUnit.Core;
 using Union.Playwright.NUnit.Pages.Interfaces;
 using Union.Playwright.NUnit.Services;
@@ -28,10 +28,17 @@ namespace Union.Playwright.NUnit.Components
 
         protected IPage PlaywrightPage => this.ParentPage.PlaywrightPage;
 
-        public ILocator RootLocator => this.PlaywrightPage.Locator(
-            this.RootXcss.StartsWith("xpath=") ? this.RootXcss :
-            this.RootXcss.StartsWith("/") ? "xpath=" + this.RootXcss :
-            "xpath=" + Xcss.Parse(this.RootXcss).XPath);
+        public ILocator RootLocator => this.GetLocatorFor(this.RootXcss);
+
+        // Resolves an absolute selector to a Playwright locator: an "xpath="-prefixed or raw-XPath
+        // selector is taken as-is; any other selector is parsed as XCSS. The selector is never scoped
+        // against a parent here — callers that need scoping build it in (via InnerXcss).
+        protected ILocator GetLocatorFor(string selector) =>
+            this.PlaywrightPage.Locator(
+                selector.StartsWith("xpath=") ? selector
+                : selector.StartsWith("/") ? "xpath=" + selector
+                : "xpath=" + Xcss.Parse(selector).XPath
+            );
 
         protected IBrowserGo Go => this.ParentPage.Service.Go;
 
